@@ -1,12 +1,14 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
+import { UsuariosModule } from './usuarios/usuarios.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+
     TypeOrmModule.forRoot({
   type: 'postgres',
   host: process.env.DB_HOST,
@@ -15,15 +17,14 @@ import { ConfigModule } from '@nestjs/config';
   password: process.env.DB_PASS,
   database: process.env.DB_NAME,
   autoLoadEntities: true,
-  synchronize: true,
-  ssl: true,
-  extra: {
-    ssl: {
-      rejectUnauthorized: false,
-    },
+  synchronize: false, // 👈 CAMBIAR A FALSE
+  ssl: {
+    rejectUnauthorized: false,
   },
-})
+}),
 
+
+    UsuariosModule,
   ],
 })
 export class AppModule {}
