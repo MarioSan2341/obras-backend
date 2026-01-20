@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Usuario } from './usuario.entity'; // Asegúrate de tener tu entidad correcta
+import { Rol } from './roles.enum';
 
 @Injectable()
 export class UsuariosService {
@@ -40,7 +41,16 @@ async findAll() {
   });
 }
 
-async updateUsuario(id: number, data: Partial<Usuario>) {
+async updateUsuario(
+  id: number,
+  data: Partial<Usuario>,
+  usuarioLogueado?: Usuario,
+) {
+  // 🔐 Validación de rol
+  if (usuarioLogueado && usuarioLogueado.rol !== Rol.ADMIN) {
+    throw new UnauthorizedException('No autorizado');
+  }
+
   await this.usuariosRepository.update(id, data);
 
   return this.usuariosRepository.findOne({
@@ -48,9 +58,12 @@ async updateUsuario(id: number, data: Partial<Usuario>) {
   });
 }
 
+
 async deleteUsuario(id: number) {
   return this.usuariosRepository.delete(id);
 }
+
+
 
   }
 

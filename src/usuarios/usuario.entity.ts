@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Rol } from './roles.enum';
 
 @Entity({ name: 'usuarios' })
 export class Usuario {
@@ -20,8 +21,12 @@ export class Usuario {
   @Column({ name: 'clave', nullable: true })
   clave: string;
 
-  @Column({ name: 'rol', nullable: true })
-  rol: string;
+   @Column({
+    type: 'varchar',
+    length: 50,
+    default: Rol.USUARIO,
+  })
+  rol: Rol;
 
   @Column({ name: 'estado', nullable: true })
   estado: string;
