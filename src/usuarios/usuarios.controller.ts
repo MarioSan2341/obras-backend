@@ -1,4 +1,4 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Get } from '@nestjs/common';
 import { UsuariosService } from './usuarios.service';
 
 @Controller('usuarios')
@@ -9,5 +9,11 @@ export class UsuariosController {
 async login(@Body() body: { nombre: string; clave: string }) {
   return this.usuariosService.login(body.nombre, body.clave);
 }
+
+@Get()
+findAll() {
+  return this.usuariosService.findAll();
+}
+
 
 }

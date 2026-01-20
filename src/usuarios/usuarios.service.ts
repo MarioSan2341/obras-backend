@@ -34,5 +34,12 @@ export class UsuariosService {
   };
 }
 
+async findAll() {
+  return this.usuariosRepository.find({
+    order: { id_usuarios: 'ASC' },
+  });
+}
+
+
   }
 
