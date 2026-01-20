@@ -1,16 +1,38 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Usuario } from './usuario.entity';
+import { Usuario } from './usuario.entity'; // Asegúrate de tener tu entidad correcta
 
 @Injectable()
 export class UsuariosService {
   constructor(
     @InjectRepository(Usuario)
-    private readonly usuarioRepo: Repository<Usuario>,
+    private usuariosRepository: Repository<Usuario>,
   ) {}
 
-  findAll() {
-    return this.usuarioRepo.find();
+  // Aquí va tu función login
+  async login(nombre: string, clave: string) {
+  const user = await this.usuariosRepository
+    .createQueryBuilder('usuario')
+    .where('LOWER(usuario.nombre) = LOWER(:nombre)', { nombre })
+    .getOne();
+
+  if (!user || String(user.clave || '').trim() !== String(clave).trim()) {
+    throw new UnauthorizedException('Usuario o contraseña incorrectos');
   }
+
+  return {
+    mensaje: 'Login exitoso',
+    usuario: {
+      id: user.id_usuarios,
+      nombre: `${user.nombre} ${user.ap_paterno} ${user.ap_materno}`,
+      telefono: user.telefono,
+      rol: user.rol,
+      estado: user.estado,
+      funcion: user.funcion
+    },
+  };
 }
+
+  }
+

@@ -1,37 +1,31 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
-@Entity('usuarios')
+@Entity({ name: 'usuarios' })
 export class Usuario {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ name: 'id_usuarios' })
   id_usuarios: number;
 
-  @Column()
-  cargo_idcargo: number;
-
-  @Column()
-  area_id_area: number;
-
-  @Column()
+  @Column({ name: 'nombre' }) // Este será tu login
   nombre: string;
 
-  @Column()
+  @Column({ name: 'ap_paterno' })
   ap_paterno: string;
 
-  @Column({ nullable: true })
+  @Column({ name: 'ap_materno', nullable: true })
   ap_materno: string;
 
-  @Column({ type: 'bigint', nullable: true })
+  @Column({ name: 'telefono', type: 'bigint', nullable: true })
   telefono: number;
 
-  @Column({ nullable: true })
-  clave: number;
+  @Column({ name: 'clave', nullable: true })
+  clave: string;
 
-  @Column({ nullable: true })
+  @Column({ name: 'rol', nullable: true })
   rol: string;
 
-  @Column({ nullable: true })
+  @Column({ name: 'estado', nullable: true })
   estado: string;
 
-  @Column({ nullable: true })
+  @Column({ name: 'funcion', nullable: true })
   funcion: string;
 }
