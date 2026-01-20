@@ -40,6 +40,17 @@ async findAll() {
   });
 }
 
+async updateUsuario(id: number, data: Partial<Usuario>) {
+  await this.usuariosRepository.update(id, data);
+
+  return this.usuariosRepository.findOne({
+    where: { id_usuarios: id },
+  });
+}
+
+async deleteUsuario(id: number) {
+  return this.usuariosRepository.delete(id);
+}
 
   }
 

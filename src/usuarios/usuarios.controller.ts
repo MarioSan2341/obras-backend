@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Delete, Put } from '@nestjs/common';
 import { UsuariosService } from './usuarios.service';
 
 @Controller('usuarios')
@@ -13,6 +13,19 @@ async login(@Body() body: { nombre: string; clave: string }) {
 @Get()
 findAll() {
   return this.usuariosService.findAll();
+}
+
+@Put(':id')
+update(
+  @Param('id') id: number,
+  @Body() body: any,
+) {
+  return this.usuariosService.updateUsuario(Number(id), body);
+}
+
+@Delete(':id')
+delete(@Param('id') id: number) {
+  return this.usuariosService.deleteUsuario(Number(id));
 }
 
 
