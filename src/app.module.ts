@@ -4,11 +4,14 @@ import { ConfigModule } from '@nestjs/config';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { ColoniasModule } from './colonias/colonias.module';
 import { AreasModule } from './areas/areas/areas.module'; // 🔹 importar aquí
+import { AsignacionesModule } from './asignaciones/asignaciones.module';
 
 @Module({
+  
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      
     }),
 
     TypeOrmModule.forRoot({
@@ -27,7 +30,8 @@ import { AreasModule } from './areas/areas/areas.module'; // 🔹 importar aquí
 
     UsuariosModule,
     ColoniasModule,
-    AreasModule, // 🔹 agregar aquí
+    AreasModule, 
+    AsignacionesModule,
   ],
 })
 export class AppModule {}
