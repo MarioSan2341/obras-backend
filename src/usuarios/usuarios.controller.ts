@@ -11,6 +11,17 @@ export class UsuariosController {
     return this.usuariosService.login(body.nombre, body.clave);
   }
 
+  @Post()
+create(@Body() body: any) {
+  const usuarioFake = {
+    rol: Rol.ADMIN, 
+  };
+
+  
+
+  return this.usuariosService.createUsuario(body, usuarioFake as any);
+}
+
   @Get()
   findAll() {
     return this.usuariosService.findAll();
@@ -33,4 +44,7 @@ update(
   delete(@Param('id') id: number) {
     return this.usuariosService.deleteUsuario(Number(id));
   }
+
+ 
+
 }

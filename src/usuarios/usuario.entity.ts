@@ -1,5 +1,16 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
 import { Rol } from './roles.enum';
+import { Cargo } from './cargo.entity';
+
+@Entity('area')
+export class Area {
+
+  @PrimaryGeneratedColumn()
+  id_area: number;
+
+  @Column()
+  nombre: string;
+}
 
 @Entity({ name: 'usuarios' })
 export class Usuario {
@@ -33,4 +44,19 @@ export class Usuario {
 
   @Column({ name: 'funcion', nullable: true })
   funcion: string;
+
+  @ManyToOne(() => Area)
+  @JoinColumn({ name: 'area_id_area' })
+  area: Area;
+
+   // 🔹 FECHA DE CREACIÓN
+  @CreateDateColumn({ name: 'fecha_creacion' })
+  fechaCreacion: Date;
+
+ @ManyToOne(() => Cargo, { nullable: true })
+@JoinColumn({ name: 'cargo_idcargo' })
+cargo: Cargo | null;
+
+
+
 }
