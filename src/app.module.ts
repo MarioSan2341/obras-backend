@@ -3,8 +3,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { ColoniasModule } from './colonias/colonias.module';
+
 import { AreasModule } from './areas/areas/areas.module'; // 🔹 importar aquí
 import { AsignacionesModule } from './asignaciones/asignaciones.module';
+
+
+import { TramitesModule } from './tramites/tramites.module';
+
 
 @Module({
   
@@ -31,7 +36,11 @@ import { AsignacionesModule } from './asignaciones/asignaciones.module';
     UsuariosModule,
     ColoniasModule,
     AreasModule, 
+
     AsignacionesModule,
+
+    TramitesModule,
+
   ],
 })
 export class AppModule {}
