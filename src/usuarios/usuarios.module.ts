@@ -4,10 +4,11 @@ import { Usuario, Area } from './usuario.entity';
 import { UsuariosService } from './usuarios.service';
 import { UsuariosController } from './usuarios.controller';
 import { Cargo } from './cargo.entity';
+import { FuncionUsuario } from './funcion-usuario.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Usuario, Area, Cargo]), // 🔑 Registrar Area aquí
+    TypeOrmModule.forFeature([Usuario, Area, Cargo, FuncionUsuario]), // 🔑 Registrar Area aquí
   ],
   providers: [UsuariosService],
   controllers: [UsuariosController],

@@ -6,10 +6,18 @@ import { ColoniasModule } from './colonias/colonias.module';
 import { AreasModule } from './areas/areas/areas.module';
 import { ConceptosModule } from './conceptos/conceptos.module';
 
+import { AsignacionesModule } from './asignaciones/asignaciones.module';
+
+
+import { TramitesModule } from './tramites/tramites.module';
+
+
 @Module({
+  
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      
     }),
 
     TypeOrmModule.forRoot({
@@ -30,6 +38,12 @@ import { ConceptosModule } from './conceptos/conceptos.module';
     ColoniasModule,
     AreasModule,
     ConceptosModule,
+    AreasModule, 
+
+    AsignacionesModule,
+
+    TramitesModule,
+
   ],
 })
 export class AppModule {}

@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
 import { Rol } from './roles.enum';
 import { Cargo } from './cargo.entity';
+import { FuncionUsuario } from './funcion-usuario.entity';
 
 @Entity('area')
 export class Area {
@@ -57,6 +58,9 @@ export class Usuario {
 @JoinColumn({ name: 'cargo_idcargo' })
 cargo: Cargo | null;
 
+@ManyToOne(() => FuncionUsuario, { nullable: true })
+@JoinColumn({ name: 'id_funcion' })
+funcionEspecial?: FuncionUsuario;
 
 
 }

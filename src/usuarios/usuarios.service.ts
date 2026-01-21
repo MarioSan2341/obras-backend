@@ -28,6 +28,12 @@ export class UsuariosService {
     if (!user || String(user.clave || '').trim() !== String(clave).trim()) {
       throw new UnauthorizedException('Usuario o contraseña incorrectos');
     }
+    // 🔒 VALIDAR ESTADO
+if (user.estado !== 'Activo') {
+  throw new UnauthorizedException(
+    'Tu usuario está inactivo. Contacta al administrador.'
+  );
+}
 
     return {
       mensaje: 'Login exitoso',
