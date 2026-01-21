@@ -3,7 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { ColoniasModule } from './colonias/colonias.module';
-import { AreasModule } from './areas/areas/areas.module'; // 🔹 importar aquí
+import { AreasModule } from './areas/areas/areas.module'; 
+import { TramitesModule } from './tramites/tramites.module';
 
 @Module({
   imports: [
@@ -27,7 +28,8 @@ import { AreasModule } from './areas/areas/areas.module'; // 🔹 importar aquí
 
     UsuariosModule,
     ColoniasModule,
-    AreasModule, // 🔹 agregar aquí
+    AreasModule, 
+    TramitesModule,
   ],
 })
 export class AppModule {}
