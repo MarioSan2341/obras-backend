@@ -18,36 +18,36 @@ export class UsuariosService {
   // ==========================
   // LOGIN
   // ==========================
-  async login(nombre: string, clave: string) {
-    const user = await this.usuariosRepository
-      .createQueryBuilder('usuario')
-      .where('LOWER(usuario.nombre) = LOWER(:nombre)', { nombre })
-      .leftJoinAndSelect('usuario.cargo', 'cargo')
-      .getOne();
+  async login(usuario: string, clave: string) {
+  const user = await this.usuariosRepository
+    .createQueryBuilder('u')
+    .where('LOWER(u.usuario) = LOWER(:usuario)', { usuario })
+    .leftJoinAndSelect('u.cargo', 'cargo')
+    .getOne();
 
-    if (!user || String(user.clave || '').trim() !== String(clave).trim()) {
-      throw new UnauthorizedException('Usuario o contraseña incorrectos');
-    }
-    // 🔒 VALIDAR ESTADO
-if (user.estado !== 'Activo') {
-  throw new UnauthorizedException(
-    'Tu usuario está inactivo. Contacta al administrador.'
-  );
-}
-
-    return {
-      mensaje: 'Login exitoso',
-      usuario: {
-        id: user.id_usuarios,
-        nombre: `${user.nombre} ${user.ap_paterno} ${user.ap_materno}`,
-        telefono: user.telefono,
-        rol: user.rol,
-        estado: user.estado,
-        funcion: user.funcion,
-        cargo: user.cargo?.nombre, // ⚡ undefined si no tiene cargo
-      },
-    };
+  if (!user || String(user.clave).trim() !== String(clave).trim()) {
+    throw new UnauthorizedException('Usuario o contraseña incorrectos');
   }
+
+  if (user.estado !== 'Activo') {
+    throw new UnauthorizedException(
+      'Tu usuario está inactivo. Contacta al administrador.',
+    );
+  }
+
+  return {
+    mensaje: 'Login exitoso',
+    usuario: {
+      id: user.id_usuarios,
+      nombre: `${user.nombre} ${user.ap_paterno} ${user.ap_materno}`,
+      telefono: user.telefono,
+      rol: user.rol,
+      estado: user.estado,
+      funcion: user.funcion,
+      cargo: user.cargo?.nombre,
+    },
+  };
+}
 
   // ==========================
   // LISTAR TODOS LOS USUARIOS

@@ -10,6 +10,7 @@ import { AsignacionesModule } from './asignaciones/asignaciones.module';
 
 
 import { TramitesModule } from './tramites/tramites.module';
+import { DirectoresObraModule } from './directores-obra/directores-obra.module';
 
 
 @Module({
@@ -43,6 +44,7 @@ import { TramitesModule } from './tramites/tramites.module';
     AsignacionesModule,
 
     TramitesModule,
+    DirectoresObraModule,
 
   ],
 })

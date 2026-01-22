@@ -1,0 +1,16 @@
+[33m8157e7f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mdevelop[m[33m, [m[1;31morigin/develop[m[33m)[m Backend: modulo de conceptos con arbol y CRUD2
+[33me632ea0[m Backend: modulo de conceptos con arbol y CRUD
+[33m68eb429[m merge develop
+[33m4ca26cc[m final usuarios
+[33m5815ab7[m Merge branch 'develop' of https://github.com/MarioSan2341/obras-backend into develop
+[33m549ec72[m tramites
+[33m1a41a83[m back actualizado uduarios x2
+[33mc22e744[m back actualizado uduarios
+[33m47b77c5[m roles
+[33mb687540[m editar eliminar usuarios
+[33m324946e[m Back Colonias
+[33m5498f4a[m ruta usuarios menu
+[33m1c36fd0[m ruta usuarios back
+[33mddcd694[m feat(backend): configuracion NestJS, conexion PostgreSQL y modulo usuarios
+[33m43d3a91[m chore: configure database connection with Render
+[33m9d9873f[m[33m ([m[1;31morigin/feature/chino[m[33m)[m Inicializa backend NestJS con configuración base
