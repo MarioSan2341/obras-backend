@@ -24,6 +24,9 @@ export class Usuario {
   @Column({ name: 'ap_paterno' })
   ap_paterno: string;
 
+  @Column({ name: 'usuario', type: 'varchar', length: 50, unique: true })
+usuario: string;  // 🔹 Este será tu login
+
   @Column({ name: 'ap_materno', nullable: true })
   ap_materno: string;
 
