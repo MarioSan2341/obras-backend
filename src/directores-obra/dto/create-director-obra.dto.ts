@@ -9,7 +9,6 @@ export class CreateDirectorObraDto {
   rfc: string;
   cedula_federal?: string;
   cedula_estatal?: string;
-   activo?: boolean;
 
   oficio_autorizacion_ro?: string;
   oficio_autorizacion_rp?: string;

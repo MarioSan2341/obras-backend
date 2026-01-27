@@ -1,23 +1,37 @@
-import { Controller, Post, Get, Patch, Param, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Patch,
+} from '@nestjs/common';
 import { DirectoresObraService } from './directores-obra.service';
-import { CreateDirectorObraDto } from './dto/create-director-obra.dto';
 
 @Controller('directores-obra')
 export class DirectoresObraController {
-  constructor(private service: DirectoresObraService) {}
-
-  @Post()
-  create(@Body() dto: CreateDirectorObraDto) {
-    return this.service.create(dto);
-  }
+  constructor(
+    private readonly directoresObraService: DirectoresObraService,
+  ) {}
 
   @Get()
   findAll() {
-    return this.service.findAll();
+    return this.directoresObraService.findAll();
+  }
+
+  @Post()
+  create(@Body() data: any) {
+    return this.directoresObraService.create(data);
+  }
+
+  @Put(':id')
+  update(@Param('id') id: number, @Body() data: any) {
+    return this.directoresObraService.update(+id, data);
   }
 
   @Patch(':id/baja')
-  darDeBaja(@Param('id') id: number) {
-    return this.service.baja(Number(id));
+  baja(@Param('id') id: number) {
+    return this.directoresObraService.baja(+id);
   }
 }
