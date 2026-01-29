@@ -29,6 +29,13 @@ export class Concepto {
   @Column({ type: 'numeric', precision: 5, scale: 2, nullable: true })
   porcentaje: number;
 
+@Column({
+  name: 'cuenta_tesoreria',
+  type: 'varchar',
+  nullable: true,
+})
+cuenta_tesoreria: string;
+
   @Column({ default: true })
   estado: boolean;
 
