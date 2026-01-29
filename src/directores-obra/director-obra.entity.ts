@@ -5,8 +5,8 @@ export class DirectorObra {
   @PrimaryGeneratedColumn({ name: 'id_director_obra' })
   id: number;
 
-@Column({ unique: true, nullable: true })
-clave_director: string;
+  @Column({ unique: true, nullable: true })
+  clave_director: string;
 
   @Column()
   nombre_completo: string;
@@ -26,9 +26,8 @@ clave_director: string;
   @Column({ nullable: true })
   telefono?: string;
 
-  
-@Column({ unique: true })
-rfc: string;
+  @Column({ unique: true })
+  rfc: string;
 
   @Column({ nullable: true })
   cedula_federal?: string;
@@ -56,8 +55,7 @@ rfc: string;
   @Column({ default: false }) rp_infraestructura: boolean;
 
   @Column({ type: 'varchar', nullable: true })
-imagen: string | null;
-
+  imagen: string | null;
 
   @CreateDateColumn()
   fecha_registro: Date;
@@ -66,7 +64,7 @@ imagen: string | null;
   fecha_actualizacion: Date;
 
   @Column({ type: 'timestamp', nullable: true })
-  fecha_baja?: Date;
+  fecha_baja: Date | null;  // CAMBIA AQUÍ: Date | null en lugar de Date?
 
   @Column({ default: true })
   activo: boolean;

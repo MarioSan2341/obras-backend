@@ -8,8 +8,9 @@ async function bootstrap() {
 
   app.enableCors();
 
+  // Configuración para archivos estáticos
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
-    prefix: '/uploads',
+    prefix: '/uploads/',
   });
 
   await app.listen(3001);

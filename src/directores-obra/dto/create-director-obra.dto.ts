@@ -14,13 +14,17 @@ export class CreateDirectorObraDto {
   oficio_autorizacion_rp?: string;
   oficio_autorizacion_pu?: string;
 
-  ro_edificacion?: boolean;
-  ro_restauracion?: boolean;
-  ro_urbanizacion?: boolean;
-  ro_infraestructura?: boolean;
+  ro_edificacion?: any;
+  ro_restauracion?: any;
+  ro_urbanizacion?: any;
+  ro_infraestructura?: any;
 
-  rp_edificacion?: boolean;
-  rp_restauracion?: boolean;
-  rp_urbanizacion?: boolean;
-  rp_infraestructura?: boolean;
+  rp_edificacion?: any;
+  rp_restauracion?: any;
+  rp_urbanizacion?: any;
+  rp_infraestructura?: any;
+
+  activo?: any;
+
+  imagen?: string;
 }
