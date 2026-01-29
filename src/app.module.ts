@@ -11,6 +11,7 @@ import { AsignacionesModule } from './asignaciones/asignaciones.module';
 
 import { TramitesModule } from './tramites/tramites.module';
 import { DirectoresObraModule } from './directores-obra/directores-obra.module';
+import { TramitesConceptosModule } from './tramites/tramites-conceptos.module';
 
 
 @Module({
@@ -45,6 +46,7 @@ import { DirectoresObraModule } from './directores-obra/directores-obra.module';
 
     TramitesModule,
     DirectoresObraModule,
+    TramitesConceptosModule,
 
   ],
 })
