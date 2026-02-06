@@ -12,7 +12,7 @@ import { AsignacionesModule } from './asignaciones/asignaciones.module';
 import { TramitesModule } from './tramites/tramites.module';
 import { DirectoresObraModule } from './directores-obra/directores-obra.module';
 import { TramitesConceptosModule } from './tramites/tramites-conceptos.module';
-
+import { OpObrasModule } from './op_obras/op_obras.module';
 
 @Module({
   
@@ -40,13 +40,15 @@ import { TramitesConceptosModule } from './tramites/tramites-conceptos.module';
     ColoniasModule,
     AreasModule,
     ConceptosModule,
-    AreasModule, 
+       
 
     AsignacionesModule,
 
     TramitesModule,
     DirectoresObraModule,
     TramitesConceptosModule,
+    OpObrasModule,
+    
 
   ],
 })
