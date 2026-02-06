@@ -3,10 +3,10 @@ import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateObraConceptoDto {
   @IsNumber()
-obraId: number;
+  obraId: number;
 
   @IsNumber()
-conceptoId: number;
+  conceptoId: number;
 
   @IsOptional()
   @IsString()

@@ -60,8 +60,8 @@ export class DirectorObra {
   @CreateDateColumn()
   fecha_registro: Date;
 
-  @UpdateDateColumn()
-  fecha_actualizacion: Date;
+  @Column({ type: 'timestamp', nullable: true })  // AÑADE ESTO
+fecha_actualizacion: Date | null; 
 
   @Column({ type: 'timestamp', nullable: true })
   fecha_baja: Date | null;  // CAMBIA AQUÍ: Date | null en lugar de Date?

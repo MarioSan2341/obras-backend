@@ -16,6 +16,25 @@ export class DirectoresObraService {
     return value === true || value === 'true' || value === 1 || value === '1';
   }
 
+  private parseDate(value: any): Date | null {
+    if (!value) return null;
+    if (value === 'null' || value === '' || value === 'undefined') return null;
+    
+    try {
+      // Si viene en formato YYYY-MM-DD (desde el input date)
+      if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        // Simplemente agregar 'T00:00:00' para evitar problemas de zona horaria
+        return new Date(`${value}T12:00:00`);
+      }
+      
+      // Si ya es un objeto Date o timestamp
+      const date = new Date(value);
+      return isNaN(date.getTime()) ? null : date;
+    } catch {
+      return null;
+    }
+  }
+
   async create(data: any) {
     const { file, ...body } = data;
 
@@ -41,8 +60,9 @@ export class DirectoresObraService {
 
       imagen,
       fecha_registro: new Date(),
-      fecha_actualizacion: new Date(),
-      fecha_baja: null, // Inicialmente null
+      // Usar parseDate que maneja UTC
+      fecha_actualizacion: this.parseDate(body.fecha_actualizacion),
+      fecha_baja: null,
     });
 
     return this.repo.save(director);
@@ -52,6 +72,9 @@ export class DirectoresObraService {
     const director = await this.repo.findOne({ where: { id } });
 
     if (!director) throw new Error('Director no encontrado');
+
+    // Verificar si se solicita eliminar la imagen
+    const eliminarImagen = data.eliminar_imagen === 'true' || data.eliminar_imagen === true;
 
     // Verificar si está cambiando el estado 'activo'
     const nuevoEstadoActivo = data.activo !== undefined ? this.toBool(data.activo) : director.activo;
@@ -68,14 +91,31 @@ export class DirectoresObraService {
       fechaBajaActualizada = null;
     }
 
-    // Imagen
-    if (file) {
+    // Manejo de imagen
+    if (eliminarImagen && director.imagen) {
+      await this.eliminarImagen(director.imagen);
+      director.imagen = null;
+    } else if (file) {
       if (director.imagen) await this.eliminarImagen(director.imagen);
       director.imagen = await this.guardarImagen(file);
     }
 
+    // Actualizar otros campos
     Object.assign(director, {
       ...data,
+
+      // Manejar campos que pueden ser null/empty string
+      oficio_autorizacion_ro: data.oficio_autorizacion_ro !== undefined 
+        ? (data.oficio_autorizacion_ro === '' ? null : data.oficio_autorizacion_ro) 
+        : director.oficio_autorizacion_ro,
+
+      oficio_autorizacion_rp: data.oficio_autorizacion_rp !== undefined 
+        ? (data.oficio_autorizacion_rp === '' ? null : data.oficio_autorizacion_rp) 
+        : director.oficio_autorizacion_rp,
+
+      oficio_autorizacion_pu: data.oficio_autorizacion_pu !== undefined 
+        ? (data.oficio_autorizacion_pu === '' ? null : data.oficio_autorizacion_pu) 
+        : director.oficio_autorizacion_pu,
 
       ro_edificacion: data.ro_edificacion !== undefined ? this.toBool(data.ro_edificacion) : director.ro_edificacion,
       ro_restauracion: data.ro_restauracion !== undefined ? this.toBool(data.ro_restauracion) : director.ro_restauracion,
@@ -88,7 +128,9 @@ export class DirectoresObraService {
       rp_infraestructura: data.rp_infraestructura !== undefined ? this.toBool(data.rp_infraestructura) : director.rp_infraestructura,
 
       activo: data.activo !== undefined ? this.toBool(data.activo) : director.activo,
-      fecha_actualizacion: new Date(),
+      fecha_actualizacion: data.fecha_actualizacion !== undefined 
+        ? this.parseDate(data.fecha_actualizacion) 
+        : director.fecha_actualizacion,
       fecha_baja: fechaBajaActualizada,
     });
 
@@ -105,11 +147,9 @@ export class DirectoresObraService {
     return this.repo.update(id, {
       activo: false,
       fecha_baja: new Date(),
-      fecha_actualizacion: new Date(),
     });
   }
 
-  // Método para reactivar un director
   async reactivar(id: number) {
     const director = await this.repo.findOne({ where: { id } });
     
@@ -120,7 +160,6 @@ export class DirectoresObraService {
     return this.repo.update(id, {
       activo: true,
       fecha_baja: null,
-      fecha_actualizacion: new Date(),
     });
   }
 
@@ -138,7 +177,6 @@ export class DirectoresObraService {
   }
 
   // ================= IMÁGENES =================
-
   private async guardarImagen(file: Express.Multer.File): Promise<string> {
     const dir = path.join(__dirname, '..', '..', 'uploads', 'directores');
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
