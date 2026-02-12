@@ -14,13 +14,8 @@ import { DirectoresObraModule } from './directores-obra/directores-obra.module';
 import { TramitesConceptosModule } from './tramites/tramites-conceptos.module';
 import { OpObrasModule } from './op_obras/op_obras.module';
 import {ObraConceptosModule} from './obra-conceptos/obra-conceptos.module';
-<<<<<<< HEAD
 import { RepObrasModule } from './reportes/rep_obras/rep_obras.module';
-import { RepLicenciasModule } from './reportes/rep_licencias/rep_licencias.module';
-
-=======
-import { OpNumerosOficialesModule } from './op_numeros_oficiales/op-numeros-oficiales.module';
->>>>>>> 2a4b3e8250eddf5638a2987bc446baee673e740f
+import { RepLicenciasModule } from './reportes/rep_Licencias/rep_licencias.module';
 @Module({
   
   imports: [
@@ -56,13 +51,8 @@ import { OpNumerosOficialesModule } from './op_numeros_oficiales/op-numeros-ofic
     TramitesConceptosModule,
     OpObrasModule,
     ObraConceptosModule,
-<<<<<<< HEAD
     RepObrasModule,
     RepLicenciasModule,
-=======
-    OpNumerosOficialesModule,
-    
->>>>>>> 2a4b3e8250eddf5638a2987bc446baee673e740f
 
   ],
 })
