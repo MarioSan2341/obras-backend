@@ -16,6 +16,8 @@ import { OpObrasModule } from './op_obras/op_obras.module';
 import {ObraConceptosModule} from './obra-conceptos/obra-conceptos.module';
 import { RepObrasModule } from './reportes/rep_obras/rep_obras.module';
 import { RepLicenciasModule } from './reportes/rep_Licencias/rep_licencias.module';
+import { OpNumerosOficiales } from './op_numeros_oficiales/op-numeros-oficiales.entity';
+
 @Module({
   
   imports: [
@@ -53,6 +55,7 @@ import { RepLicenciasModule } from './reportes/rep_Licencias/rep_licencias.modul
     ObraConceptosModule,
     RepObrasModule,
     RepLicenciasModule,
+    OpNumerosOficiales
 
   ],
 })
