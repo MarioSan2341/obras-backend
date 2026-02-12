@@ -62,7 +62,7 @@ export class OpObrasService {
       propietario: o.nombrePropietario,
       calle: o.domicilioPropietario,
       noOficial: `Mza ${o.manzanaObra ?? ''} Lt ${o.loteObra ?? ''}`,
-      colonia: o.nombreColoniaObra,
+      colonia: null, // nombreColoniaObra no existe en la BD
       estadoObra: o.estadoObra,
       estadoPago: o.estadoPago
     }));

@@ -14,6 +14,7 @@ import { DirectoresObraModule } from './directores-obra/directores-obra.module';
 import { TramitesConceptosModule } from './tramites/tramites-conceptos.module';
 import { OpObrasModule } from './op_obras/op_obras.module';
 import {ObraConceptosModule} from './obra-conceptos/obra-conceptos.module';
+import { OpNumerosOficialesModule } from './op_numeros_oficiales/op-numeros-oficiales.module';
 @Module({
   
   imports: [
@@ -49,6 +50,7 @@ import {ObraConceptosModule} from './obra-conceptos/obra-conceptos.module';
     TramitesConceptosModule,
     OpObrasModule,
     ObraConceptosModule,
+    OpNumerosOficialesModule,
     
 
   ],
