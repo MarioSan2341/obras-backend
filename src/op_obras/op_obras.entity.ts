@@ -6,71 +6,87 @@ export class OpObra {
   @PrimaryGeneratedColumn({ name: 'idobra' })
   idObra: number;
 
-  @Column({ name: 'IdUsuarioCapturador' })
+  @Column({ name: 'idusuariocapturador' })
   idUsuarioCapturador: number;
 
-  @Column({ name: 'IdUsuarioAutorizador' })
+  @Column({ name: 'idusuarioautorizador' })
   idUsuarioAutorizador: number;
 
-  @Column({ name: 'IdColoniaObra' })
+  @Column({ name: 'idcoloniaobra' })
   idColoniaObra: number;
 
-  @Column({ name: 'Consecutivo' })
+  @Column({ name: 'consecutivo' })
   consecutivo: string;
 
-  @Column({ name: 'FechaCaptura' })
+  @Column({ name: 'fechacaptura' })
   fechaCaptura: Date;
 
-  @Column({ name: 'NombrePropietario' })
+  @Column({ name: 'nombrepropietario' })
   nombrePropietario: string;
 
-  @Column({ name: 'DomicilioPropietario', nullable: true })
+  @Column({ name: 'domiciliopropietario', nullable: true })
   domicilioPropietario: string;
 
-  @Column({ name: 'NombreColoniaObra' })
-  nombreColoniaObra: string;
-
-  @Column({ name: 'IdDensidadColoniaObra' })
-  idDensidadColoniaObra: string;
-
-  @Column({ name: 'ManzanaObra', nullable: true })
+  @Column({ name: 'manzanaobra', nullable: true })
   manzanaObra: string;
 
-  @Column({ name: 'LoteObra', nullable: true })
+  @Column({ name: 'loteobra', nullable: true })
   loteObra: string;
 
-  @Column({ name: 'AguaPotable', default: 'Si' })
+  @Column({ name: 'aguapotable', default: 'Si' })
   aguaPotable: string;
 
-  @Column({ name: 'Drenaje', default: 'Si' })
+  @Column({ name: 'drenaje', default: 'Si' })
   drenaje: string;
 
-  @Column({ name: 'Electricidad', default: 'Si' })
+  @Column({ name: 'electricidad', default: 'Si' })
   electricidad: string;
 
-  @Column({ name: 'AlumbradoPublico', default: 'Si' })
+  @Column({ name: 'alumbradopublico', default: 'Si' })
   alumbradoPublico: string;
 
-  @Column({ name: 'Machuelos', default: 'Si' })
+  @Column({ name: 'machuelos', default: 'Si' })
   machuelos: string;
 
-  @Column({ name: 'Banquetas', default: 'Si' })
+  @Column({ name: 'banquetas', default: 'Si' })
   banquetas: string;
 
-  @Column({ name: 'Pavimento', default: 'Si' })
+  @Column({ name: 'pavimento', default: 'Si' })
   pavimento: string;
 
-  @Column({ name: 'Vigencia' })
+  @Column({ name: 'vigencia' })
   vigencia: string;
 
-  @Column({ name: 'EstadoVerificacion' })
+  @Column({ name: 'estadoverificacion' })
   estadoVerificacion: string;
 
-  @Column({ name: 'EstadoObra' })
+  @Column({ name: 'estadoobra' })
   estadoObra: string;
 
-  @Column({ name: 'EstadoPago' })
+  @Column({ name: 'estadopago' })
   estadoPago: string;
 
-  // puedes agregar más columnas opcionales aquí si quieres
+  @Column({ name: 'tipopropietario', nullable: true })
+  tipoPropietario: string;
+
+  @Column({ name: 'numerospredioscontiguosobra', nullable: true })
+  numerosPrediosContiguosObra: string;
+
+  @Column({ name: 'condominioobra', nullable: true })
+  condominioObra: string;
+
+  @Column({ name: 'etapaobra', nullable: true })
+  etapaObra: string;
+
+  @Column({ name: 'entrecalle1obra', nullable: true })
+  entreCalle1Obra: string;
+
+  @Column({ name: 'entrecalle2obra', nullable: true })
+  entreCalle2Obra: string;
+
+  @Column({ name: 'destinoactualproyeto', nullable: true })
+  destinoActualProyeto: string;
+
+  @Column({ name: 'destinopropuestoproyecto', nullable: true })
+  destinoPropuestoProyecto: string;
 }
