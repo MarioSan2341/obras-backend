@@ -14,6 +14,9 @@ import { DirectoresObraModule } from './directores-obra/directores-obra.module';
 import { TramitesConceptosModule } from './tramites/tramites-conceptos.module';
 import { OpObrasModule } from './op_obras/op_obras.module';
 import {ObraConceptosModule} from './obra-conceptos/obra-conceptos.module';
+import { RepObrasModule } from './reportes/rep_obras/rep_obras.module';
+import { RepLicenciasModule } from './reportes/rep_licencias/rep_licencias.module';
+
 @Module({
   
   imports: [
@@ -49,7 +52,8 @@ import {ObraConceptosModule} from './obra-conceptos/obra-conceptos.module';
     TramitesConceptosModule,
     OpObrasModule,
     ObraConceptosModule,
-    
+    RepObrasModule,
+    RepLicenciasModule,
 
   ],
 })
