@@ -45,6 +45,42 @@ update(
     return this.usuariosService.deleteUsuario(Number(id));
   }
 
- 
+  @Post(':id/revelar-clave')
+  async revelarClave(
+    @Param('id') id: string,
+    @Body() body: { idAdmin: number; claveAdmin: string },
+  ) {
+    return this.usuariosService.revelarClave(
+      Number(id),
+      body.idAdmin,
+      body.claveAdmin,
+    );
+  }
 
+  @Put(':id/clave')
+  async cambiarClave(
+    @Param('id') id: string,
+    @Body() body: { claveActual: string; nuevaClave: string; confirmarNuevaClave: string },
+  ) {
+    return this.usuariosService.cambiarClave(
+      Number(id),
+      body.claveActual,
+      body.nuevaClave,
+      body.confirmarNuevaClave,
+    );
+  }
+
+  @Put(':id/clave-admin')
+  async cambiarClaveComoAdmin(
+    @Param('id') id: string,
+    @Body() body: { idAdmin: number; claveAdmin: string; nuevaClave: string; confirmarNuevaClave: string },
+  ) {
+    return this.usuariosService.cambiarClaveComoAdmin(
+      Number(id),
+      body.idAdmin,
+      body.claveAdmin,
+      body.nuevaClave,
+      body.confirmarNuevaClave,
+    );
+  }
 }

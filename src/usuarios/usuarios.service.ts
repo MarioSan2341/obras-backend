@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Usuario } from './usuario.entity';
@@ -44,7 +44,8 @@ export class UsuariosService {
       mensaje: 'Login exitoso',
       usuario: {
         id: user.id_usuarios,
-        nombre: `${user.nombre} ${user.ap_paterno} ${user.ap_materno}`,
+        usuario: user.usuario,
+        nombre: `${user.nombre} ${user.ap_paterno} ${user.ap_materno}`.trim(),
         telefono: user.telefono,
         rol: user.rol,
         estado: user.estado,
@@ -179,11 +180,74 @@ export class UsuariosService {
   }
 
   // usuarios.service.ts
-async findAllFunciones(): Promise<FuncionUsuario[]> {
-  return this.funcionUsuarioRepository.find({
-    order: { nombre: 'ASC' },
-  });
-}
+  async findAllFunciones(): Promise<FuncionUsuario[]> {
+    return this.funcionUsuarioRepository.find({
+      order: { nombre: 'ASC' },
+    });
+  }
 
+  /** Requiere clave de un admin para revelar la clave del usuario id. idAdmin = id del admin logueado. */
+  async revelarClave(idUsuario: number, idAdmin: number, claveAdmin: string): Promise<{ clave: string }> {
+    const admin = await this.usuariosRepository.findOne({ where: { id_usuarios: idAdmin } });
+    if (!admin || String(admin.clave).trim() !== String(claveAdmin).trim()) {
+      throw new UnauthorizedException('Clave de administrador incorrecta');
+    }
+    if (admin.rol !== Rol.ADMIN) {
+      throw new UnauthorizedException('Solo un administrador puede ver la clave');
+    }
+    const usuario = await this.usuariosRepository.findOne({ where: { id_usuarios: idUsuario } });
+    if (!usuario) throw new BadRequestException('Usuario no encontrado');
+    return { clave: usuario.clave ?? '' };
+  }
 
+  /** Cambiar clave del usuario: claveActual, nuevaClave, confirmarNuevaClave */
+  async cambiarClave(
+    idUsuario: number,
+    claveActual: string,
+    nuevaClave: string,
+    confirmarNuevaClave: string,
+  ): Promise<{ mensaje: string }> {
+    if (nuevaClave !== confirmarNuevaClave) {
+      throw new BadRequestException('La nueva clave y su confirmación no coinciden');
+    }
+    if (!nuevaClave || nuevaClave.trim().length < 1) {
+      throw new BadRequestException('La nueva clave no puede estar vacía');
+    }
+    const usuario = await this.usuariosRepository.findOne({ where: { id_usuarios: idUsuario } });
+    if (!usuario) throw new BadRequestException('Usuario no encontrado');
+    if (String(usuario.clave).trim() !== String(claveActual).trim()) {
+      throw new UnauthorizedException('Clave actual incorrecta');
+    }
+    usuario.clave = nuevaClave.trim();
+    await this.usuariosRepository.save(usuario);
+    return { mensaje: 'Clave actualizada correctamente' };
+  }
+
+  /** Cambiar clave de cualquier usuario como admin (sin necesidad de clave actual del usuario objetivo) */
+  async cambiarClaveComoAdmin(
+    idUsuarioObjetivo: number,
+    idAdmin: number,
+    claveAdmin: string,
+    nuevaClave: string,
+    confirmarNuevaClave: string,
+  ): Promise<{ mensaje: string }> {
+    const admin = await this.usuariosRepository.findOne({ where: { id_usuarios: idAdmin } });
+    if (!admin || String(admin.clave).trim() !== String(claveAdmin).trim()) {
+      throw new UnauthorizedException('Clave de administrador incorrecta');
+    }
+    if (admin.rol !== Rol.ADMIN) {
+      throw new UnauthorizedException('Solo un administrador puede cambiar la clave de otros usuarios');
+    }
+    if (nuevaClave !== confirmarNuevaClave) {
+      throw new BadRequestException('La nueva clave y su confirmación no coinciden');
+    }
+    if (!nuevaClave || nuevaClave.trim().length < 1) {
+      throw new BadRequestException('La nueva clave no puede estar vacía');
+    }
+    const usuarioObjetivo = await this.usuariosRepository.findOne({ where: { id_usuarios: idUsuarioObjetivo } });
+    if (!usuarioObjetivo) throw new BadRequestException('Usuario no encontrado');
+    usuarioObjetivo.clave = nuevaClave.trim();
+    await this.usuariosRepository.save(usuarioObjetivo);
+    return { mensaje: 'Clave actualizada correctamente' };
+  }
 }
