@@ -39,7 +39,7 @@ export class RepLicenciasService {
 
     const query = this.obraConceptoRepo
       .createQueryBuilder('oc')
-      .leftJoin('op_obras', 'obra', 'obra.idobra = oc."IdObra"')
+      .leftJoin('op_obras', 'obra', 'obra.idobra = oc.idobra')
       .leftJoin('conceptos', 'concepto', 'concepto.id = oc.id_concepto')
       .leftJoin('conceptos', 'conceptoPadre', 'conceptoPadre.id = concepto.parent_id')
       .leftJoin('conceptos', 'conceptoAbuelo', 'conceptoAbuelo.id = conceptoPadre.parent_id')
@@ -95,7 +95,7 @@ export class RepLicenciasService {
     // Optimizar COUNT: usar subquery para evitar recalcular JOINs complejos
     const countQuery = this.obraConceptoRepo
       .createQueryBuilder('oc')
-      .leftJoin('op_obras', 'obra', 'obra.idobra = oc."IdObra"')
+      .leftJoin('op_obras', 'obra', 'obra.idobra = oc.idobra')
       .leftJoin('conceptos', 'concepto', 'concepto.id = oc.id_concepto')
       .leftJoin('conceptos', 'conceptoPadre', 'conceptoPadre.id = concepto.parent_id')
       .leftJoin('conceptos', 'conceptoAbuelo', 'conceptoAbuelo.id = conceptoPadre.parent_id');
@@ -144,7 +144,7 @@ export class RepLicenciasService {
     let idsSubQuery = `
       SELECT DISTINCT oc_ids.id, obra_ids."fechacaptura", obra_ids.idobra, oc_ids.id_concepto
       FROM obra_conceptos oc_ids
-      LEFT JOIN op_obras obra_ids ON obra_ids.idobra = oc_ids."IdObra"
+      LEFT JOIN op_obras obra_ids ON obra_ids.idobra = oc_ids.idobra
     `;
     
     const idsParams: any[] = [];
@@ -218,7 +218,7 @@ export class RepLicenciasService {
     // Crear una nueva query limpia solo para estos IDs
     const finalQuery = this.obraConceptoRepo
       .createQueryBuilder('oc')
-      .leftJoin('op_obras', 'obra', 'obra.idobra = oc."IdObra"')
+      .leftJoin('op_obras', 'obra', 'obra.idobra = oc.idobra')
       .leftJoin('conceptos', 'concepto', 'concepto.id = oc.id_concepto')
       .leftJoin('conceptos', 'conceptoPadre', 'conceptoPadre.id = concepto.parent_id')
       .leftJoin('conceptos', 'conceptoAbuelo', 'conceptoAbuelo.id = conceptoPadre.parent_id')
@@ -278,7 +278,7 @@ export class RepLicenciasService {
 
     const query = this.obraConceptoRepo
       .createQueryBuilder('oc')
-      .leftJoin('op_obras', 'obra', 'obra.idobra = oc."IdObra"')
+      .leftJoin('op_obras', 'obra', 'obra.idobra = oc.idobra')
       .leftJoin('conceptos', 'concepto', 'concepto.id = oc.id_concepto')
       .leftJoin('conceptos', 'conceptoPadre', 'conceptoPadre.id = concepto.parent_id')
       .leftJoin('conceptos', 'conceptoAbuelo', 'conceptoAbuelo.id = conceptoPadre.parent_id')
