@@ -15,7 +15,7 @@ export class ObraConcepto {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'idobra' })
+  @Column({ name: 'IdObra' })
   obra_id: number;
 
   @ManyToOne(() => Concepto, { onDelete: 'RESTRICT' })
