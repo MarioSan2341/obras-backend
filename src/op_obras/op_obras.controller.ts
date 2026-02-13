@@ -18,8 +18,8 @@ export class OpObrasController {
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number): Promise<OpObra> {
-    return this.opObrasService.findOne(id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.opObrasService.findOneWithDetails(id);
   }
 
   @Post()
@@ -33,6 +33,14 @@ export class OpObrasController {
     @Body() body: Partial<OpObra>,
   ): Promise<OpObra> {
     return this.opObrasService.update(id, body);
+  }
+
+  @Post(':id/numeros-manual')
+  saveNumerosManual(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { numeros: { calle?: string; numeroOficial?: string }[] },
+  ) {
+    return this.opObrasService.saveNumerosManual(id, body.numeros ?? []);
   }
 
    @Delete(':id')

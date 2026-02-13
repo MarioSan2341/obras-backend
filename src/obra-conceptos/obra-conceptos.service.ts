@@ -58,7 +58,7 @@ export class ObraConceptosService {
     /** 4️⃣ Evitar duplicados */
     const existe = await this.obraConceptoRepo.findOne({
       where: {
-        obra_id: dto.obraId,
+        idobra: dto.obraId,
         concepto: { id: dto.conceptoId },
       },
     });
@@ -74,7 +74,7 @@ export class ObraConceptosService {
 
     /** 6️⃣ Crear relación */
     const registro = this.obraConceptoRepo.create({
-      obra_id: dto.obraId,
+      idobra: dto.obraId,
       concepto,
       cantidad: dto.cantidad,
       costo_unitario: dto.costo_unitario,
@@ -112,7 +112,7 @@ export class ObraConceptosService {
 
   async findByObra(obraId: number) {
     const list = await this.obraConceptoRepo.find({
-      where: { obra_id: obraId },
+      where: { idobra: obraId },
       relations: ['concepto'],
       order: { id: 'ASC' },
     });
@@ -123,7 +123,7 @@ export class ObraConceptosService {
         const pathKey = conceptoPath.map((p) => p.nombre).join('\0');
         return {
           id: oc.id,
-          obra_id: oc.obra_id,
+          obra_id: oc.idobra,
           cantidad: oc.cantidad,
           costo_unitario: oc.costo_unitario,
           total: oc.total,
@@ -154,7 +154,7 @@ export class ObraConceptosService {
 
   async getTotalByObra(obraId: number) {
     const conceptos = await this.obraConceptoRepo.find({
-      where: { obra_id: obraId },
+      where: { idobra: obraId },
     });
 
     const total = conceptos.reduce((sum, c) => {
