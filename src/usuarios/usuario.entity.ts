@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Rol } from './roles.enum';
 import { Cargo } from './cargo.entity';
 import { FuncionUsuario } from './funcion-usuario.entity';
@@ -33,7 +33,7 @@ usuario: string;  // 🔹 Este será tu login
   @Column({ name: 'telefono', type: 'bigint', nullable: true })
   telefono: number;
 
-  @Column({ name: 'clave', nullable: true })
+  @Column({ name: 'clave', type: 'varchar', length: 255, nullable: true })
   clave: string;
 
    @Column({
@@ -56,6 +56,9 @@ usuario: string;  // 🔹 Este será tu login
    // 🔹 FECHA DE CREACIÓN
   @CreateDateColumn({ name: 'fecha_creacion' })
   fechaCreacion: Date;
+
+  @UpdateDateColumn({ name: 'fecha_modificacion' })
+  fechaModificacion: Date;
 
  @ManyToOne(() => Cargo, { nullable: true })
 @JoinColumn({ name: 'cargo_idcargo' })

@@ -17,7 +17,12 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "migrate:passwords": "ts-node -r tsconfig-paths/register scripts/migrar-contraseñas.ts",
+    "verify:passwords": "ts-node -r tsconfig-paths/register scripts/verificar-contraseñas.ts",
+    "verify:user": "ts-node -r tsconfig-paths/register scripts/verificar-usuario.ts",
+    "fix:clave-type": "node fix-clave-type.js",
+    "add:fecha-modificacion": "node add-fecha-modificacion.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -26,6 +31,8 @@
     "@nestjs/mapped-types": "^2.1.0",
     "@nestjs/platform-express": "^11.1.12",
     "@nestjs/typeorm": "^11.0.0",
+    "@types/bcrypt": "^6.0.0",
+    "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
     "dotenv": "^17.2.3",
