@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { DirectorObra } from '../directores-obra/director-obra.entity';
 
 @Entity('op_obras')
 export class OpObra {
@@ -137,6 +138,46 @@ export class OpObra {
 
   @Column({ name: 'estadoverificacion', nullable: true })
   estadoVerificacion: string;
+
+  @Column({ name: 'fechaverificacion', type: 'timestamp', nullable: true })
+  fechaVerificacion: Date;
+
+  @Column({ name: 'verificacion', type: 'text', nullable: true })
+  verificacion: string;
+
+  @Column({ name: 'id_director_obra', nullable: true })
+  idDirectorObra: number;
+
+  @ManyToOne(() => DirectorObra, { nullable: true })
+  @JoinColumn({ name: 'id_director_obra' })
+  directorObra: DirectorObra;
+
+  @Column({ name: 'bitacora', nullable: true })
+  bitacoraObra: string;
+
+  @Column({ name: 'notas', type: 'text', nullable: true })
+  nota: string;
+
+  @Column({ name: 'fechaaprobacion', type: 'timestamp', nullable: true })
+  fechaAprovacion: Date;
+
+  @Column({ name: 'fechapago', type: 'timestamp', nullable: true })
+  fechaPago: Date;
+
+  @Column({ name: 'informacionadicional', type: 'text', nullable: true })
+  informacionAdicional: string;
+
+  @Column({ name: 'recibodepago', nullable: true })
+  reciboDePago: string;
+
+  @Column({ name: 'otrosrecibos', nullable: true })
+  otrosRecibos: string;
+
+  @Column({ name: 'foliodelaforma', nullable: true })
+  folioDeLaForma: string;
+
+  @Column({ name: 'fechavencepago', type: 'timestamp', nullable: true })
+  fechaPagoTesoreria: Date;
 
   @Column({ name: 'estadoobra', default: 'En Proceso' })
   estadoObra: string;

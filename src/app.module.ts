@@ -17,6 +17,7 @@ import {ObraConceptosModule} from './obra-conceptos/obra-conceptos.module';
 import { RepObrasModule } from './reportes/rep_obras/rep_obras.module';
 import { RepLicenciasModule } from './reportes/rep_Licencias/rep_licencias.module';
 import { OpNumerosOficialesModule } from './op_numeros_oficiales/op-numeros-oficiales.module';
+import { EstadisticasModule } from './estadisticas/estadisticas.module';
 
 @Module({
   
@@ -55,7 +56,8 @@ import { OpNumerosOficialesModule } from './op_numeros_oficiales/op-numeros-ofic
     ObraConceptosModule,
     RepObrasModule,
     RepLicenciasModule,
-    OpNumerosOficialesModule
+    OpNumerosOficialesModule,
+    EstadisticasModule
 
   ],
 })
