@@ -10,6 +10,7 @@ import { ObraConcepto } from './obra-concepto.entity';
 import { Concepto } from '../conceptos/concepto.entity';
 import { OpObra } from '../op_obras/op_obras.entity';
 import { CreateObraConceptoDto } from './dto/create-obra-concepto.dto';
+import { UpdateObraConceptoDto } from './dto/update-obra-concepto.dto';
 
 @Injectable()
 export class ObraConceptosService {
@@ -35,24 +36,38 @@ export class ObraConceptosService {
     }
 
     /** 2️⃣ Validar concepto */
+    // Usar QueryBuilder con select explícito para asegurar que parent_id y medicion se carguen correctamente
+    const conceptoRaw = await this.conceptoRepo
+      .createQueryBuilder('c')
+      .select('c.id', 'id')
+      .addSelect('c.nombre', 'nombre')
+      .addSelect('c.nivel', 'nivel')
+      .addSelect('c.parent_id', 'parent_id')
+      .addSelect('c.medicion', 'medicion')
+      .where('c.id = :id', { id: dto.conceptoId })
+      .getRawOne<{ id: number; nombre: string; nivel: number; parent_id: number | null; medicion: string | null }>();
+
+    if (!conceptoRaw) {
+      throw new NotFoundException('Concepto no encontrado');
+    }
+
+    /** 3️⃣ No permitir conceptos abuelos (sin parent_id) */
+    // Solo bloquear si el concepto NO tiene parent_id (es un concepto raíz/abuelo)
+    // Permitir cualquier concepto que tenga parent_id (padre, hijo, nieto)
+    // Verificar parent_id explícitamente (puede ser null o undefined)
+    if (conceptoRaw.parent_id === null || conceptoRaw.parent_id === undefined) {
+      throw new BadRequestException(
+        `No se puede agregar un concepto abuelo (nivel raíz) a la obra. Concepto ID: ${conceptoRaw.id}, Nombre: ${conceptoRaw.nombre}, Nivel: ${conceptoRaw.nivel}, Parent ID: ${conceptoRaw.parent_id}. Solo se pueden agregar conceptos padre, hijo o nieto.`,
+      );
+    }
+
+    // Obtener el concepto completo para usarlo después
     const concepto = await this.conceptoRepo.findOne({
       where: { id: dto.conceptoId },
-      relations: ['padre'],
     });
 
     if (!concepto) {
       throw new NotFoundException('Concepto no encontrado');
-    }
-
-    /** 3️⃣ Solo conceptos hoja */
-    const hijos = await this.conceptoRepo.find({
-      where: { padre: { id: concepto.id } },
-    });
-
-    if (hijos.length > 0) {
-      throw new BadRequestException(
-        'No se puede agregar un concepto padre a la obra',
-      );
     }
 
     /** 4️⃣ Evitar duplicados */
@@ -73,13 +88,19 @@ export class ObraConceptosService {
     const total = Number(dto.cantidad) * Number(dto.costo_unitario);
 
     /** 6️⃣ Crear relación */
+    // Usar la medición del concepto si no se proporciona en el DTO
+    // Priorizar: DTO > conceptoRaw (de la query) > concepto (entidad completa)
+    const medicionRaw = dto.medicion?.trim() || conceptoRaw.medicion?.trim() || concepto.medicion?.trim() || null;
+    // Convertir null a undefined para TypeScript (usar ?? para preservar strings vacíos)
+    const medicion = medicionRaw ?? undefined;
+
     const registro = this.obraConceptoRepo.create({
       idobra: dto.obraId,
-      concepto,
+      concepto: concepto, // TypeScript ahora sabe que concepto no es null
       cantidad: dto.cantidad,
       costo_unitario: dto.costo_unitario,
       total,
-      medicion: dto.medicion,
+      medicion: medicion,
       observaciones: dto.descripcion_costo,
       estado: true,
       fecha_creacion: new Date(),
@@ -150,6 +171,61 @@ export class ObraConceptosService {
     }
 
     return this.obraConceptoRepo.remove(registro);
+  }
+
+  async update(id: number, dto: UpdateObraConceptoDto) {
+    const registro = await this.obraConceptoRepo.findOne({
+      where: { id },
+      relations: ['concepto'],
+    });
+
+    if (!registro) {
+      throw new NotFoundException('Registro no encontrado');
+    }
+
+    // Si se proporciona un nuevo conceptoId, validar y actualizar
+    if (dto.conceptoId !== undefined && dto.conceptoId !== registro.concepto.id) {
+      const nuevoConcepto = await this.conceptoRepo.findOne({
+        where: { id: dto.conceptoId },
+      });
+
+      if (!nuevoConcepto) {
+        throw new NotFoundException('Concepto no encontrado');
+      }
+
+      // Validar que no sea un concepto abuelo (nivel 1)
+      if (!nuevoConcepto.parent_id) {
+        throw new BadRequestException(
+          'No se puede cambiar a un concepto abuelo (nivel raíz). Solo se pueden usar conceptos padre, hijo o nieto.',
+        );
+      }
+
+      // Verificar que no exista otro registro con el mismo concepto en la misma obra
+      const existe = await this.obraConceptoRepo.findOne({
+        where: {
+          idobra: registro.idobra,
+          concepto: { id: dto.conceptoId },
+        },
+      });
+
+      if (existe && existe.id !== id) {
+        throw new BadRequestException(
+          'Este concepto ya fue agregado a la obra',
+        );
+      }
+
+      registro.concepto = nuevoConcepto;
+    }
+
+    const total = Number(dto.cantidad) * Number(dto.costo_unitario);
+    registro.cantidad = dto.cantidad;
+    registro.costo_unitario = dto.costo_unitario;
+    registro.total = total;
+    if (dto.descripcion_costo !== undefined) registro.observaciones = dto.descripcion_costo;
+    // La medición NO se puede cambiar, se mantiene la original
+
+    await this.obraConceptoRepo.save(registro);
+    return registro.idobra;
   }
 
   async getTotalByObra(obraId: number) {
