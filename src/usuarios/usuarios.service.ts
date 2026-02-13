@@ -72,6 +72,22 @@ export class UsuariosService {
     try {
       const user = await this.usuariosRepository
         .createQueryBuilder('u')
+        .select([
+          'u.id_usuarios',
+          'u.nombre',
+          'u.ap_paterno',
+          'u.ap_materno',
+          'u.usuario',
+          'u.telefono',
+          'u.clave',
+          'u.rol',
+          'u.estado',
+          'u.funcion',
+          'u.fechaCreacion',
+          'u.area_id_area',
+          'u.cargo_idcargo',
+          'u.id_funcion',
+        ])
         .where('LOWER(u.usuario) = LOWER(:usuario)', { usuario })
         .leftJoinAndSelect('u.cargo', 'cargo')
         .leftJoinAndSelect('u.area', 'area')
