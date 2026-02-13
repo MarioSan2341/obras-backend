@@ -26,7 +26,8 @@ export class OpObrasService {
 
   async findOne(id: number): Promise<OpObra> {
     const obra = await this.opObraRepository.findOne({
-      where: { idObra: id }
+      where: { idObra: id },
+      relations: ['directorObra']
     });
 
     if (!obra) {
@@ -49,8 +50,15 @@ export class OpObrasService {
         : Promise.resolve(null)
     ]);
 
+    const director = obra.directorObra;
+    const directorLabel = director
+      ? (director.clave_director ? `${director.clave_director}: ${director.nombre_completo}` : director.nombre_completo)
+      : null;
+
     return {
       ...obra,
+      idDirectorObra: obra.idDirectorObra ?? null,
+      directorObraLabel: directorLabel,
       nombreColoniaObra: colonia?.nombre ?? '',
       idDensidadColoniaObra: colonia?.densidad ?? '',
       destinoActualProyecto: obra.destinoActualProyeto,
@@ -73,6 +81,8 @@ export class OpObrasService {
       obra.destinoActualProyeto = data.destinoActualProyecto;
       delete (data as any).destinoActualProyecto;
     }
+    if ((data as any).directorObra !== undefined) delete (data as any).directorObra;
+    if ((data as any).directorObraLabel !== undefined) delete (data as any).directorObraLabel;
     Object.assign(obra, data);
 
     return this.opObraRepository.save(obra);

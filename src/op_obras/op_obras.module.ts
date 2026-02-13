@@ -5,9 +5,10 @@ import { OpObrasService } from './op_obras.service';
 import { OpObrasController } from './op_obras.controller';
 import { Colonia } from '../colonias/colonias.entity';
 import { OpNumeroOficial } from '../op_numerosoficiales/op_numerosoficiales.entity';
+import { DirectorObra } from '../directores-obra/director-obra.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([OpObra, Colonia, OpNumeroOficial])],
+  imports: [TypeOrmModule.forFeature([OpObra, Colonia, OpNumeroOficial, DirectorObra])],
   controllers: [OpObrasController],
   providers: [OpObrasService],
 })
