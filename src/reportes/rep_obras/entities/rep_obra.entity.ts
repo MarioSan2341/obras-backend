@@ -141,8 +141,8 @@ export class RepObra {
   @Column({ name: 'descripcionproyecto', type: 'text', nullable: true })
   descripcionProyecto: string;
 
-  @Column({ name: 'idperito', nullable: true })
-  idPerito: number;
+  @Column({ name: 'id_director_obra', nullable: true })
+  idDirectorObra: number;
 
   @Column({ name: 'bitacora', nullable: true })
   bitacora: string;

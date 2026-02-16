@@ -223,7 +223,7 @@ export class RepObrasService {
       { header: 'Coeficiente Ocupacion', key: 'coeficienteOcupacion', width: 10 },
       { header: 'Coeficiente Utilizacion', key: 'coeficienteUtilizacion', width: 10 },
       { header: 'Descripcion Proyecto', key: 'descripcionProyecto', width: 30 },
-      { header: 'Nombre Perito', key: 'idPerito', width: 15 }, // se puede mapear luego al nombre
+      { header: 'Director Obra', key: 'idDirectorObra', width: 15 },
       { header: 'Folio Bitacora', key: 'bitacora', width: 15 },
       { header: 'Vigencia', key: 'vigencia', width: 10 },
       { header: 'Fecha Verificacion', key: 'fechaVerificacion', width: 15 },
