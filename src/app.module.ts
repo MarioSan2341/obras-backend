@@ -18,6 +18,7 @@ import { RepObrasModule } from './reportes/rep_obras/rep_obras.module';
 import { RepLicenciasModule } from './reportes/rep_Licencias/rep_licencias.module';
 import { OpNumerosOficialesModule } from './op_numeros_oficiales/op-numeros-oficiales.module';
 import { EstadisticasModule } from './estadisticas/estadisticas.module';
+import { HistorialModule } from './historial/historial.module';
 
 @Module({
   
@@ -57,7 +58,8 @@ import { EstadisticasModule } from './estadisticas/estadisticas.module';
     RepObrasModule,
     RepLicenciasModule,
     OpNumerosOficialesModule,
-    EstadisticasModule
+    EstadisticasModule,
+    HistorialModule
 
   ],
 })
