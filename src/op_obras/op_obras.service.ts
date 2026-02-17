@@ -1,9 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { OpObra } from './op_obras.entity';
 import { Colonia } from '../colonias/colonias.entity';
 import { OpNumeroOficial } from '../op_numerosoficiales/op_numerosoficiales.entity';
+import { HistorialService } from '../historial/historial.service';
+import { Usuario } from '../usuarios/usuario.entity';
+import { Rol } from '../usuarios/roles.enum';
 
 
 @Injectable()
@@ -16,7 +19,29 @@ export class OpObrasService {
     private coloniasRepository: Repository<Colonia>,
     @InjectRepository(OpNumeroOficial)
     private numerosOficialesRepository: Repository<OpNumeroOficial>,
+    @Inject(forwardRef(() => HistorialService))
+    private historialService: HistorialService,
+    @InjectRepository(Usuario)
+    private usuariosRepository: Repository<Usuario>,
   ) {}
+
+  /**
+   * Verifica si un usuario puede realizar acciones de escritura (crear/modificar/eliminar)
+   * SUPERVISOR solo puede leer, ADMIN y USUARIO pueden escribir
+   */
+  private async puedeEscribir(idUsuario?: number): Promise<boolean> {
+    if (!idUsuario) return true; // Si no hay usuario, permitir (para compatibilidad)
+    
+    const usuario = await this.usuariosRepository.findOne({
+      where: { id_usuarios: idUsuario },
+      select: ['id_usuarios', 'rol'],
+    });
+    
+    if (!usuario) return false;
+    
+    // SUPERVISOR solo puede leer
+    return usuario.rol !== Rol.SUPERVISOR;
+  }
 
   findAll(): Promise<OpObra[]> {
     return this.opObraRepository.find({
@@ -69,12 +94,42 @@ export class OpObrasService {
     };
   }
 
-  create(data: Partial<OpObra>): Promise<OpObra> {
+  async create(data: Partial<OpObra>): Promise<OpObra> {
+    // Verificar permisos: SUPERVISOR no puede crear obras
+    const idUsuario = data.idUsuarioCapturador;
+    if (idUsuario && !(await this.puedeEscribir(idUsuario))) {
+      throw new UnauthorizedException('Los supervisores solo pueden visualizar información, no pueden crear obras');
+    }
+
     const obra = this.opObraRepository.create(data);
-    return this.opObraRepository.save(obra);
+    const obraGuardada = await this.opObraRepository.save(obra);
+    
+    // Registrar en historial si hay usuario capturador
+    if (obraGuardada.idUsuarioCapturador) {
+      try {
+        await this.historialService.registrarAccion(
+          obraGuardada.idUsuarioCapturador,
+          `Creó una nueva obra`,
+          'crear',
+          'Obra',
+          obraGuardada.idObra,
+          `Obra ID: ${obraGuardada.idObra}, Consecutivo: ${obraGuardada.consecutivo || 'N/A'}`,
+        );
+      } catch (error) {
+        // No fallar la creación de la obra si falla el registro en historial
+        console.error('Error al registrar en historial:', error);
+      }
+    }
+    
+    return obraGuardada;
   }
 
-  async update(id: number, data: Partial<OpObra> & { destinoActualProyecto?: string }): Promise<OpObra> {
+  async update(id: number, data: Partial<OpObra> & { destinoActualProyecto?: string }, idUsuarioModificador?: number): Promise<OpObra> {
+    // Verificar permisos: SUPERVISOR no puede modificar obras
+    if (idUsuarioModificador && !(await this.puedeEscribir(idUsuarioModificador))) {
+      throw new UnauthorizedException('Los supervisores solo pueden visualizar información, no pueden modificar obras');
+    }
+
     const obra = await this.findOne(id);
 
     if (data.destinoActualProyecto !== undefined) {
@@ -85,7 +140,27 @@ export class OpObrasService {
     if ((data as any).directorObraLabel !== undefined) delete (data as any).directorObraLabel;
     Object.assign(obra, data);
 
-    return this.opObraRepository.save(obra);
+    const obraActualizada = await this.opObraRepository.save(obra);
+    
+    // Registrar en historial si hay usuario modificador
+    const usuarioId = idUsuarioModificador || obraActualizada.idUsuarioCapturador;
+    if (usuarioId) {
+      try {
+        await this.historialService.registrarAccion(
+          usuarioId,
+          `Modificó información de obra`,
+          'modificar',
+          'Obra',
+          obraActualizada.idObra,
+          `Obra ID: ${obraActualizada.idObra}, Consecutivo: ${obraActualizada.consecutivo || 'N/A'}`,
+        );
+      } catch (error) {
+        // No fallar la actualización de la obra si falla el registro en historial
+        console.error('Error al registrar en historial:', error);
+      }
+    }
+    
+    return obraActualizada;
   }
 
   async remove(id: number): Promise<void> {
@@ -131,19 +206,146 @@ export class OpObrasService {
     });
   }
 
-   async eliminarObra(id: number) {
+  // Obtener obras con filtros optimizados (filtra directamente en BD)
+  async findListadoFiltrado(
+    consecutivo?: string,
+    fechaCaptura?: string,
+    nombrePropietario?: string,
+  ) {
+    try {
+      // Construir query con filtros en la BD
+      const queryBuilder = this.opObraRepository.createQueryBuilder('obra');
+
+      // Filtrar por consecutivo
+      if (consecutivo && consecutivo.trim()) {
+        queryBuilder.andWhere('LOWER(obra.consecutivo) LIKE LOWER(:consecutivo)', {
+          consecutivo: `%${consecutivo.trim()}%`,
+        });
+      }
+
+      // Filtrar por fecha de captura (rango de un día si se proporciona fecha)
+      if (fechaCaptura && fechaCaptura.trim()) {
+        const fechaInicio = new Date(fechaCaptura);
+        fechaInicio.setHours(0, 0, 0, 0);
+        const fechaFin = new Date(fechaCaptura);
+        fechaFin.setHours(23, 59, 59, 999);
+        queryBuilder.andWhere('obra.fechacaptura >= :fechaInicio', { fechaInicio });
+        queryBuilder.andWhere('obra.fechacaptura <= :fechaFin', { fechaFin });
+      }
+
+      // Filtrar por nombre del propietario
+      if (nombrePropietario && nombrePropietario.trim()) {
+        queryBuilder.andWhere('LOWER(obra.nombrepropietario) LIKE LOWER(:nombrePropietario)', {
+          nombrePropietario: `%${nombrePropietario.trim()}%`,
+        });
+      }
+
+      // Ordenar por ID descendente
+      queryBuilder.orderBy('obra.idobra', 'DESC');
+
+      // Obtener obras filtradas
+      const obras = await queryBuilder.getMany();
+
+      if (obras.length === 0) {
+        return [];
+      }
+
+      // Obtener solo las colonias y números oficiales necesarios
+      const coloniaIds = [...new Set(obras.map((o) => o.idColoniaObra).filter((id) => id != null))];
+      const obraIds = obras.map((o) => o.idObra);
+
+      const [colonias, numerosOficiales] = await Promise.all([
+        coloniaIds.length > 0
+          ? this.coloniasRepository.find({ where: { id_colonia: In(coloniaIds) } })
+          : Promise.resolve([]),
+        this.numerosOficialesRepository.find({
+          where: { idobra: In(obraIds) },
+        }),
+      ]);
+
+      const coloniasMap = new Map(colonias.map((c) => [c.id_colonia, { nombre: c.nombre, densidad: c.densidad }]));
+      const numerosPorObra = new Map<number, { calle: string; numerooficial: string }[]>();
+      for (const n of numerosOficiales) {
+        const list = numerosPorObra.get(n.idobra) ?? [];
+        list.push({ calle: n.calle ?? '', numerooficial: n.numerooficial });
+        numerosPorObra.set(n.idobra, list);
+      }
+
+      return obras.map((o) => {
+        const numeros = numerosPorObra.get(o.idObra) ?? [];
+        const noOficialStr =
+          numeros.length > 0
+            ? numeros.map((n) => (n.calle ? `${n.calle}, No. ${n.numerooficial}` : `No. ${n.numerooficial}`)).join('; ')
+            : `Mza ${o.manzanaObra ?? ''} Lt ${o.loteObra ?? ''}`.trim() || '-';
+
+        return {
+          id: o.idObra,
+          consecutivo: o.consecutivo,
+          captura: o.fechaCaptura,
+          propietario: o.nombrePropietario,
+          calle: o.domicilioPropietario,
+          noOficial: noOficialStr,
+          colonia: coloniasMap.get(o.idColoniaObra)?.nombre ?? '',
+          coloniaDensidad: coloniasMap.get(o.idColoniaObra)?.densidad ?? '',
+          estadoObra: o.estadoObra,
+          estadoPago: o.estadoPago,
+        };
+      });
+    } catch (error) {
+      console.error('Error en findListadoFiltrado:', error);
+      throw error;
+    }
+  }
+
+   async eliminarObra(id: number, idUsuarioEliminador?: number) {
+    // Verificar permisos: SUPERVISOR no puede eliminar obras
+    if (idUsuarioEliminador && !(await this.puedeEscribir(idUsuarioEliminador))) {
+      throw new UnauthorizedException('Los supervisores solo pueden visualizar información, no pueden eliminar obras');
+    }
+
+    // Obtener información de la obra antes de eliminarla para el historial
+    const obraAEliminar = await this.opObraRepository.findOne({
+      where: { idObra: id },
+      select: ['idObra', 'consecutivo', 'nombrePropietario'],
+    });
+
     const resultado = await this.opObraRepository.delete(id);
     if (resultado.affected === 0) {
       throw new NotFoundException(`La obra con id ${id} no existe`);
     }
+
+    // Registrar en historial si hay usuario que eliminó la obra
+    const usuarioId = idUsuarioEliminador || obraAEliminar?.idUsuarioCapturador;
+    if (usuarioId && obraAEliminar) {
+      try {
+        await this.historialService.registrarAccion(
+          usuarioId,
+          `Eliminó una obra`,
+          'eliminar',
+          'Obra',
+          obraAEliminar.idObra,
+          `Obra ID: ${obraAEliminar.idObra}, Consecutivo: ${obraAEliminar.consecutivo || 'N/A'}`,
+        );
+      } catch (error) {
+        // No fallar la eliminación de la obra si falla el registro en historial
+        console.error('Error al registrar en historial:', error);
+      }
+    }
+
     return { mensaje: `Obra con id ${id} eliminada correctamente` };
   }
 
   async saveNumerosManual(
     id: number,
     numeros: { calle?: string; numeroOficial?: string }[],
+    idUsuarioModificador?: number,
   ) {
-    await this.findOne(id);
+    // Verificar permisos: SUPERVISOR no puede modificar números oficiales
+    if (idUsuarioModificador && !(await this.puedeEscribir(idUsuarioModificador))) {
+      throw new UnauthorizedException('Los supervisores solo pueden visualizar información, no pueden modificar números oficiales');
+    }
+
+    const obra = await this.findOne(id);
 
     await this.numerosOficialesRepository.delete({ idobra: id });
 
@@ -159,6 +361,23 @@ export class OpObrasService {
 
     if (toInsert.length > 0) {
       await this.numerosOficialesRepository.insert(toInsert);
+    }
+
+    // Registrar en historial si hay usuario que modificó los números oficiales
+    const usuarioId = idUsuarioModificador || obra.idUsuarioCapturador;
+    if (usuarioId) {
+      try {
+        await this.historialService.registrarAccion(
+          usuarioId,
+          `Modificó números oficiales de obra`,
+          'modificar',
+          'Obra',
+          obra.idObra,
+          `Obra ID: ${obra.idObra}, Consecutivo: ${obra.consecutivo || 'N/A'}, Números: ${toInsert.length}`,
+        );
+      } catch (error) {
+        console.error('Error al registrar en historial:', error);
+      }
     }
 
     return this.numerosOficialesRepository.find({

@@ -22,7 +22,9 @@
     "verify:passwords": "ts-node -r tsconfig-paths/register scripts/verificar-contraseñas.ts",
     "verify:user": "ts-node -r tsconfig-paths/register scripts/verificar-usuario.ts",
     "fix:clave-type": "node fix-clave-type.js",
-    "add:fecha-modificacion": "node add-fecha-modificacion.js"
+    "add:fecha-modificacion": "node add-fecha-modificacion.js",
+    "create:historial-table": "node create-historial-table.js",
+    "populate:historial-obras": "node populate-historial-from-obras.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

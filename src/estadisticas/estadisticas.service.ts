@@ -27,6 +27,12 @@ export class EstadisticasService {
   async obtenerEstadisticasPagos(
     fechaInicio?: string,
     fechaFin?: string,
+    idColonia?: number,
+    idDirector?: number,
+    estadoObra?: string,
+    tipoPropietario?: string,
+    destinoActual?: string,
+    destinoPropuesto?: string,
   ): Promise<EstadisticasPagosResponse> {
     const query = this.repObraRepository
       .createQueryBuilder('obra')
@@ -47,6 +53,42 @@ export class EstadisticasService {
     if (fechaFin) {
       query.andWhere('obra.fechaCaptura <= :fechaFin', {
         fechaFin: fechaFin,
+      });
+    }
+
+    if (idColonia) {
+      query.andWhere('obra.idColoniaObra = :idColonia', {
+        idColonia: idColonia,
+      });
+    }
+
+    if (idDirector) {
+      query.andWhere('obra.idDirectorObra = :idDirector', {
+        idDirector: idDirector,
+      });
+    }
+
+    if (estadoObra) {
+      query.andWhere('obra.estadoObra = :estadoObra', {
+        estadoObra: estadoObra,
+      });
+    }
+
+    if (tipoPropietario) {
+      query.andWhere('obra.tipoPropietario = :tipoPropietario', {
+        tipoPropietario: tipoPropietario,
+      });
+    }
+
+    if (destinoActual) {
+      query.andWhere('obra.destinoActualProyeto = :destinoActual', {
+        destinoActual: destinoActual,
+      });
+    }
+
+    if (destinoPropuesto) {
+      query.andWhere('obra.destinoPropuestoProyecto = :destinoPropuesto', {
+        destinoPropuesto: destinoPropuesto,
       });
     }
 

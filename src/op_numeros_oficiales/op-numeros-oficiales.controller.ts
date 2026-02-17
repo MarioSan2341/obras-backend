@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { OpNumerosOficialesService } from './op-numeros-oficiales.service';
 
 @Controller('op-numeros-oficiales')
@@ -8,8 +8,16 @@ export class OpNumerosOficialesController {
   ) {}
 
   @Get('reporte')
-  getReporte() {
-    return this.numerosOficialesService.findObrasConNumerosOficiales();
+  getReporte(
+    @Query('consecutivo') consecutivo?: string,
+    @Query('numeroOficial') numeroOficial?: string,
+    @Query('calle') calle?: string,
+  ) {
+    return this.numerosOficialesService.findObrasConNumerosOficialesFiltrado(
+      consecutivo,
+      numeroOficial,
+      calle,
+    );
   }
 
   @Get('todos')

@@ -471,4 +471,164 @@ export class OpNumerosOficialesService {
       throw error;
     }
   }
+
+  // Obtener obras con números oficiales con filtros opcionales (optimizado con filtros en BD)
+  async findObrasConNumerosOficialesFiltrado(
+    consecutivo?: string,
+    numeroOficial?: string,
+    calle?: string,
+  ) {
+    // Si no hay filtros, usar el método original
+    if (!consecutivo && !numeroOficial && !calle) {
+      return this.findObrasConNumerosOficiales();
+    }
+
+    try {
+      // Construir query optimizada con filtros en la BD
+      const queryBuilder = this.numerosOficialesRepository
+        .createQueryBuilder('num')
+        .select('num.idobra', 'idobra')
+        .distinct(true);
+
+      // Filtrar por número oficial
+      if (numeroOficial && numeroOficial.trim()) {
+        queryBuilder.andWhere('LOWER(num.numerooficial) LIKE LOWER(:numeroOficial)', {
+          numeroOficial: `%${numeroOficial.trim()}%`,
+        });
+      }
+
+      // Filtrar por calle
+      if (calle && calle.trim()) {
+        queryBuilder.andWhere('LOWER(num.calle) LIKE LOWER(:calle)', {
+          calle: `%${calle.trim()}%`,
+        });
+      }
+
+      // Obtener IDs de obras que cumplen los filtros de números oficiales
+      const obrasIdsConFiltros = await queryBuilder.getRawMany();
+      const obraIds = obrasIdsConFiltros.map((r) => r.idobra);
+
+      // Si hay filtro de consecutivo, también filtrar obras
+      let obrasFiltradas: OpObra[] = [];
+      if (consecutivo && consecutivo.trim()) {
+        if (obraIds.length > 0) {
+          obrasFiltradas = await this.obrasRepository
+            .createQueryBuilder('obra')
+            .where('obra.idobra IN (:...ids)', { ids: obraIds })
+            .andWhere('LOWER(obra.consecutivo) LIKE LOWER(:consecutivo)', {
+              consecutivo: `%${consecutivo.trim()}%`,
+            })
+            .getMany();
+        }
+      } else {
+        if (obraIds.length > 0) {
+          obrasFiltradas = await this.obrasRepository.find({
+            where: { idObra: In(obraIds) },
+          });
+        }
+      }
+
+      if (obrasFiltradas.length === 0) {
+        return [];
+      }
+
+      // Obtener números oficiales solo de las obras filtradas, aplicando filtros directamente en BD
+      const obrasIdsFinales = obrasFiltradas.map((o) => o.idObra);
+      
+      const numerosQueryBuilder = this.numerosOficialesRepository
+        .createQueryBuilder('num')
+        .where('num.idobra IN (:...ids)', { ids: obrasIdsFinales });
+
+      if (numeroOficial && numeroOficial.trim()) {
+        numerosQueryBuilder.andWhere('LOWER(num.numerooficial) LIKE LOWER(:numeroOficial)', {
+          numeroOficial: `%${numeroOficial.trim()}%`,
+        });
+      }
+
+      if (calle && calle.trim()) {
+        numerosQueryBuilder.andWhere('LOWER(num.calle) LIKE LOWER(:calle)', {
+          calle: `%${calle.trim()}%`,
+        });
+      }
+
+      const numerosFiltrados = await numerosQueryBuilder
+        .orderBy('num.idnumerosoficialesobra', 'DESC')
+        .getMany();
+
+      // Obtener colonias
+      const coloniaIds = [...new Set(obrasFiltradas.map((o) => o.idColoniaObra).filter((id) => id != null))];
+      const coloniasMap = new Map<number, string>();
+      if (coloniaIds.length > 0) {
+        const colonias = await this.coloniasRepository.find({
+          where: { id_colonia: In(coloniaIds) },
+        });
+        colonias.forEach((col) => {
+          coloniasMap.set(col.id_colonia, col.nombre);
+        });
+      }
+
+      // Helper para limpiar valores
+      const getValue = (value: any): string | null => {
+        if (value === null || value === undefined) return null;
+        if (value === 'null' || value === 'NULL' || value === 'Null') return null;
+        if (typeof value === 'string') {
+          const trimmed = value.trim();
+          if (trimmed === '' || trimmed === 'null' || trimmed === 'NULL') return null;
+          return trimmed;
+        }
+        return null;
+      };
+
+      // Agrupar números oficiales por obra y construir resultado
+      const obrasMap = new Map();
+      obrasFiltradas.forEach((obra) => {
+        obrasMap.set(obra.idObra, {
+          idObra: obra.idObra,
+          consecutivo: obra.consecutivo,
+          fechaCaptura: obra.fechaCaptura,
+          nombrePropietario: obra.nombrePropietario,
+          domicilioPropietario: getValue(obra.domicilioPropietario),
+          nombreColoniaObra: coloniasMap.get(obra.idColoniaObra) || null,
+          manzanaObra: getValue(obra.manzanaObra),
+          loteObra: getValue(obra.loteObra),
+          estadoObra: obra.estadoObra,
+          estadoPago: obra.estadoPago,
+          tipoPropietario: getValue(obra.tipoPropietario),
+          prediosContiguos: getValue(obra.numerosPrediosContiguosObra),
+          condominio: getValue(obra.condominioObra),
+          etapa: getValue(obra.etapaObra),
+          entreCalle1: getValue(obra.entreCalle1Obra),
+          entreCalle2: getValue(obra.entreCalle2Obra),
+          destinoActual: getValue(obra.destinoActualProyeto),
+          destinoPropuesto: getValue(obra.destinoPropuestoProyecto),
+          numerosOficiales: [],
+        });
+      });
+
+      // Agregar números oficiales a cada obra
+      numerosFiltrados.forEach((num) => {
+        const obra = obrasMap.get(num.idobra);
+        if (obra) {
+          obra.numerosOficiales.push({
+            idnumerosoficialesobra: num.idnumerosoficialesobra,
+            numerooficial: num.numerooficial,
+            fechacreacionno: num.fechacreacionno,
+            idusuariono: num.idusuariono,
+            calle: num.calle,
+          });
+        }
+      });
+
+      // Retornar solo obras que tienen números oficiales después del filtrado
+      const resultados = Array.from(obrasMap.values()).filter(
+        (obra) => obra.numerosOficiales.length > 0,
+      );
+      resultados.sort((a, b) => b.idObra - a.idObra);
+
+      return resultados;
+    } catch (error) {
+      console.error('Error en findObrasConNumerosOficialesFiltrado:', error);
+      throw error;
+    }
+  }
 }

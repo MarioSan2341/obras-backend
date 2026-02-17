@@ -34,13 +34,16 @@ export class UsuariosController {
 
   @Post()
 create(@Body() body: any) {
-  const usuarioFake = {
-    rol: Rol.ADMIN, 
-  };
-
+  // Obtener el ID del usuario logueado del body si está presente
+  const idUsuarioLogueado = body.idUsuarioLogueado;
+  delete body.idUsuarioLogueado; // Remover del body para no guardarlo como campo del usuario
   
+  const usuarioLogueado = idUsuarioLogueado ? {
+    id_usuarios: idUsuarioLogueado,
+    rol: Rol.ADMIN, // Asumimos que solo admins pueden crear usuarios
+  } : undefined;
 
-  return this.usuariosService.createUsuario(body, usuarioFake as any);
+  return this.usuariosService.createUsuario(body, usuarioLogueado as any);
 }
 
   @Get()
@@ -53,17 +56,30 @@ update(
   @Param('id') id: number,
   @Body() body: any,
 ) {
-  const usuarioFake = {
-    rol: Rol.ADMIN, // 👈 simulamos que Luis es admin
-  };
+  // Obtener el ID del usuario logueado del body si está presente
+  const idUsuarioLogueado = body.idUsuarioLogueado;
+  delete body.idUsuarioLogueado; // Remover del body para no guardarlo como campo del usuario
+  
+  const usuarioLogueado = idUsuarioLogueado ? {
+    id_usuarios: idUsuarioLogueado,
+    rol: Rol.ADMIN, // Asumimos que solo admins pueden modificar usuarios
+  } : undefined;
 
-  return this.usuariosService.updateUsuario(Number(id), body, usuarioFake as any);
+  return this.usuariosService.updateUsuario(Number(id), body, usuarioLogueado as any);
 }
 
 
   @Delete(':id')
-  delete(@Param('id') id: number) {
-    return this.usuariosService.deleteUsuario(Number(id));
+  delete(@Param('id') id: number, @Body() body: any) {
+    // Obtener el ID del usuario logueado del body si está presente
+    const idUsuarioLogueado = body?.idUsuarioLogueado;
+    
+    const usuarioLogueado = idUsuarioLogueado ? {
+      id_usuarios: idUsuarioLogueado,
+      rol: Rol.ADMIN, // Asumimos que solo admins pueden eliminar usuarios
+    } : undefined;
+
+    return this.usuariosService.deleteUsuario(Number(id), usuarioLogueado as any);
   }
 
   @Post(':id/revelar-clave')
@@ -100,6 +116,19 @@ update(
       Number(id),
       body.idAdmin,
       body.claveAdmin,
+      body.nuevaClave,
+      body.confirmarNuevaClave,
+    );
+  }
+
+  @Put(':id/clave-admin-directa')
+  async cambiarClaveComoAdminDirecto(
+    @Param('id') id: string,
+    @Body() body: { idAdmin: number; nuevaClave: string; confirmarNuevaClave: string },
+  ) {
+    return this.usuariosService.cambiarClaveComoAdminDirecto(
+      Number(id),
+      body.idAdmin,
       body.nuevaClave,
       body.confirmarNuevaClave,
     );

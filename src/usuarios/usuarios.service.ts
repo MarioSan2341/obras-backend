@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -6,6 +6,7 @@ import { Usuario } from './usuario.entity';
 import { Rol } from './roles.enum';
 import { Cargo } from './cargo.entity';
 import { FuncionUsuario } from './funcion-usuario.entity';
+import { HistorialService } from '../historial/historial.service';
 
 @Injectable()
 export class UsuariosService {
@@ -19,6 +20,9 @@ export class UsuariosService {
 
     @InjectRepository(FuncionUsuario)
     private funcionUsuarioRepository: Repository<FuncionUsuario>,
+
+    @Inject(forwardRef(() => HistorialService))
+    private historialService: HistorialService,
   ) {}
 
   // ==========================
@@ -188,38 +192,36 @@ export class UsuariosService {
   // CREAR NUEVO USUARIO
   // ==========================
   async createUsuario(data: any, usuarioLogueado?: Usuario) {
+    // Solo ADMIN puede crear usuarios
     if (usuarioLogueado && usuarioLogueado.rol !== Rol.ADMIN) {
-      throw new UnauthorizedException('No autorizado');
+      throw new UnauthorizedException('Solo los administradores pueden crear usuarios');
     }
 
     // Cargo
-    let cargoEntity: Cargo | undefined;
+    let cargoId: number | null = null;
     if (data.cargo) {
       const cargoEncontrado = await this.cargoRepository.findOne({
         where: { nombre: data.cargo },
       });
       if (!cargoEncontrado) {
-        cargoEntity = this.cargoRepository.create({ nombre: data.cargo });
-        await this.cargoRepository.save(cargoEntity);
+        const cargoNuevo = this.cargoRepository.create({ nombre: data.cargo });
+        const cargoGuardado = await this.cargoRepository.save(cargoNuevo);
+        cargoId = cargoGuardado.idcargo;
       } else {
-        cargoEntity = cargoEncontrado;
+        cargoId = cargoEncontrado.idcargo;
       }
     }
 
     // Área
-    let areaEntity;
+    let areaId: number | null = null;
     if (data.area?.id_area) {
-      areaEntity = await this.usuariosRepository.manager.findOneBy('Area', {
-        id_area: data.area.id_area,
-      });
+      areaId = data.area.id_area;
     }
 
     // Función
-    let funcionEntity;
+    let funcionId: number | null = null;
     if (data.funcionEspecial?.id_funcion) {
-      funcionEntity = await this.funcionUsuarioRepository.findOne({
-        where: { id_funcion: data.funcionEspecial.id_funcion },
-      });
+      funcionId = data.funcionEspecial.id_funcion;
     }
 
     // Hashear la contraseña si se proporciona
@@ -228,23 +230,78 @@ export class UsuariosService {
       claveHasheada = await this.hashPassword(data.clave);
     }
 
-    const nuevoUsuario = this.usuariosRepository.create({
-      ...data,
+    // Usar inserción SQL directa para evitar problemas con fecha_modificacion
+    const insertData: any = {
+      nombre: data.nombre,
+      ap_paterno: data.ap_paterno,
+      ap_materno: data.ap_materno ?? null,
+      usuario: data.usuario,
+      telefono: data.telefono ?? null,
       clave: claveHasheada,
-      cargo: cargoEntity ?? null,
-      area: areaEntity ?? null,
-      funcionEspecial: funcionEntity ?? null,
-    });
+      rol: data.rol || Rol.USUARIO,
+      estado: data.estado ?? null,
+      funcion: data.funcion ?? null,
+    };
 
-    return this.usuariosRepository.save(nuevoUsuario);
+    if (cargoId !== null && cargoId !== undefined) {
+      insertData.cargo_idcargo = cargoId;
+    }
+    if (areaId !== null && areaId !== undefined) {
+      insertData.area_id_area = areaId;
+    }
+    if (funcionId !== null && funcionId !== undefined) {
+      insertData.id_funcion = funcionId;
+    }
+
+    const columns = Object.keys(insertData);
+    const values = Object.values(insertData);
+    const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+    const columnNames = columns.join(', ');
+
+    const result = await this.usuariosRepository.manager.query(
+      `INSERT INTO usuarios (${columnNames}) VALUES (${placeholders}) RETURNING id_usuarios`,
+      values,
+    );
+
+    const idUsuarioCreado = result[0]?.id_usuarios;
+    if (!idUsuarioCreado) {
+      throw new BadRequestException('Error al crear el usuario');
+    }
+
+    // Obtener el usuario creado sin clave ni fecha_modificacion
+    const usuario = await this.findOneUsuarioSinClaveNiFechaMod(idUsuarioCreado);
+    
+    if (!usuario) {
+      throw new BadRequestException('Error al obtener el usuario creado');
+    }
+    
+    // Registrar en historial si hay usuario logueado válido que creó este usuario
+    if (usuarioLogueado && usuarioLogueado.id_usuarios) {
+      try {
+        await this.historialService.registrarAccion(
+          usuarioLogueado.id_usuarios,
+          `Creó un nuevo usuario`,
+          'crear',
+          'Usuario',
+          usuario.id_usuarios,
+          `Usuario ID: ${usuario.id_usuarios}, Nombre: ${usuario.nombre} ${usuario.ap_paterno || ''}`,
+        );
+      } catch (error) {
+        // No fallar la creación del usuario si falla el registro en historial
+        console.error('Error al registrar en historial:', error);
+      }
+    }
+    
+    return usuario;
   }
 
   // ==========================
   // ACTUALIZAR USUARIO
   // ==========================
   async updateUsuario(id: number, data: any, usuarioLogueado?: Usuario) {
+    // Solo ADMIN puede modificar usuarios (SUPERVISOR solo puede leer)
     if (usuarioLogueado && usuarioLogueado.rol !== Rol.ADMIN) {
-      throw new UnauthorizedException('No autorizado');
+      throw new UnauthorizedException('Solo los administradores pueden modificar usuarios');
     }
 
     const existe = await this.usuariosRepository
@@ -289,6 +346,7 @@ export class UsuariosService {
       nombre: data.nombre ?? undefined,
       ap_paterno: data.ap_paterno ?? undefined,
       ap_materno: data.ap_materno ?? undefined,
+      usuario: data.usuario ?? undefined,
       telefono: data.telefono !== undefined ? data.telefono : undefined,
       estado: data.estado ?? undefined,
       rol: data.rol ?? undefined,
@@ -313,7 +371,30 @@ export class UsuariosService {
       [id, ...values],
     );
 
-    return this.findOneUsuarioSinClaveNiFechaMod(id);
+    const usuarioActualizado = await this.findOneUsuarioSinClaveNiFechaMod(id);
+    
+    if (!usuarioActualizado) {
+      throw new BadRequestException('Usuario no encontrado después de la actualización');
+    }
+    
+    // Registrar en historial si hay usuario logueado válido que modificó este usuario
+    if (usuarioLogueado && usuarioLogueado.id_usuarios) {
+      try {
+        await this.historialService.registrarAccion(
+          usuarioLogueado.id_usuarios,
+          `Modificó información de usuario`,
+          'modificar',
+          'Usuario',
+          usuarioActualizado.id_usuarios,
+          `Usuario ID: ${usuarioActualizado.id_usuarios}, Nombre: ${usuarioActualizado.nombre} ${usuarioActualizado.ap_paterno || ''}`,
+        );
+      } catch (error) {
+        // No fallar la actualización del usuario si falla el registro en historial
+        console.error('Error al registrar en historial:', error);
+      }
+    }
+    
+    return usuarioActualizado;
   }
 
   private async findOneUsuarioSinClaveNiFechaMod(id: number) {
@@ -341,8 +422,38 @@ export class UsuariosService {
   // ==========================
   // ELIMINAR USUARIO
   // ==========================
-  async deleteUsuario(id: number) {
-    return this.usuariosRepository.delete(id);
+  async deleteUsuario(id: number, usuarioLogueado?: Usuario) {
+    // Solo ADMIN puede eliminar usuarios (SUPERVISOR solo puede leer)
+    if (usuarioLogueado && usuarioLogueado.rol !== Rol.ADMIN) {
+      throw new UnauthorizedException('Solo los administradores pueden eliminar usuarios');
+    }
+
+    // Obtener información del usuario antes de eliminarlo para el historial
+    const usuarioAEliminar = await this.usuariosRepository.findOne({
+      where: { id_usuarios: id },
+      select: ['id_usuarios', 'nombre', 'ap_paterno', 'ap_materno'],
+    });
+
+    const resultado = await this.usuariosRepository.delete(id);
+
+    // Registrar en historial si hay usuario logueado válido que eliminó este usuario
+    if (usuarioLogueado && usuarioLogueado.id_usuarios && usuarioAEliminar) {
+      try {
+        await this.historialService.registrarAccion(
+          usuarioLogueado.id_usuarios,
+          `Eliminó un usuario`,
+          'eliminar',
+          'Usuario',
+          usuarioAEliminar.id_usuarios,
+          `Usuario ID: ${usuarioAEliminar.id_usuarios}, Nombre: ${usuarioAEliminar.nombre} ${usuarioAEliminar.ap_paterno || ''}`,
+        );
+      } catch (error) {
+        // No fallar la eliminación del usuario si falla el registro en historial
+        console.error('Error al registrar en historial:', error);
+      }
+    }
+
+    return resultado;
   }
 
   // usuarios.service.ts
@@ -423,6 +534,21 @@ export class UsuariosService {
     
     usuario.clave = await this.hashPassword(nuevaClave);
     await this.usuariosRepository.save(usuario);
+    
+    // Registrar en historial
+    try {
+      await this.historialService.registrarAccion(
+        idUsuario,
+        `Cambió su contraseña`,
+        'modificar',
+        'Usuario',
+        idUsuario,
+        `Usuario ID: ${idUsuario}`,
+      );
+    } catch (error) {
+      console.error('Error al registrar en historial:', error);
+    }
+    
     return { mensaje: 'Clave actualizada correctamente' };
   }
 
@@ -458,6 +584,96 @@ export class UsuariosService {
     
     usuarioObjetivo.clave = await this.hashPassword(nuevaClave);
     await this.usuariosRepository.save(usuarioObjetivo);
+    
+    // Registrar en historial
+    try {
+      await this.historialService.registrarAccion(
+        idAdmin,
+        `Cambió la contraseña de un usuario`,
+        'modificar',
+        'Usuario',
+        idUsuarioObjetivo,
+        `Usuario objetivo ID: ${idUsuarioObjetivo}, Nombre: ${usuarioObjetivo.nombre} ${usuarioObjetivo.ap_paterno || ''}`,
+      );
+    } catch (error) {
+      console.error('Error al registrar en historial:', error);
+    }
+    
+    return { mensaje: 'Clave actualizada correctamente' };
+  }
+
+  /** Cambiar clave como admin sin verificar la clave del admin (solo verifica que sea admin) */
+  async cambiarClaveComoAdminDirecto(
+    idUsuarioObjetivo: number,
+    idAdmin: number,
+    nuevaClave: string,
+    confirmarNuevaClave: string,
+  ): Promise<{ mensaje: string }> {
+    const admin = await this.usuariosRepository
+      .createQueryBuilder('u')
+      .select(['u.id_usuarios', 'u.rol'])
+      .where('u.id_usuarios = :id', { id: idAdmin })
+      .getOne();
+    
+    if (!admin) {
+      throw new UnauthorizedException('Administrador no encontrado');
+    }
+    
+    if (admin.rol !== Rol.ADMIN) {
+      throw new UnauthorizedException('Solo un administrador puede cambiar la clave de otros usuarios');
+    }
+    
+    if (nuevaClave !== confirmarNuevaClave) {
+      throw new BadRequestException('La nueva clave y su confirmación no coinciden');
+    }
+    
+    if (!nuevaClave || nuevaClave.trim().length < 1) {
+      throw new BadRequestException('La nueva clave no puede estar vacía');
+    }
+    
+    // Verificar que el usuario objetivo existe sin cargar fecha_modificacion
+    const existeUsuario = await this.usuariosRepository
+      .createQueryBuilder('u')
+      .select('u.id_usuarios')
+      .where('u.id_usuarios = :id', { id: idUsuarioObjetivo })
+      .getOne();
+    
+    if (!existeUsuario) {
+      throw new BadRequestException('Usuario no encontrado');
+    }
+    
+    // Obtener información del usuario objetivo antes de cambiar la clave
+    const usuarioObjetivo = await this.usuariosRepository
+      .createQueryBuilder('u')
+      .select(['u.id_usuarios', 'u.nombre', 'u.ap_paterno'])
+      .where('u.id_usuarios = :id', { id: idUsuarioObjetivo })
+      .getOne();
+
+    if (!usuarioObjetivo) {
+      throw new BadRequestException('Usuario no encontrado');
+    }
+
+    // Actualizar la clave directamente usando SQL raw para evitar fecha_modificacion
+    const claveHasheada = await this.hashPassword(nuevaClave);
+    await this.usuariosRepository.manager.query(
+      'UPDATE usuarios SET clave = $1 WHERE id_usuarios = $2',
+      [claveHasheada, idUsuarioObjetivo],
+    );
+    
+    // Registrar en historial
+    try {
+      await this.historialService.registrarAccion(
+        idAdmin,
+        `Cambió la contraseña de un usuario`,
+        'modificar',
+        'Usuario',
+        idUsuarioObjetivo,
+        `Usuario objetivo ID: ${idUsuarioObjetivo}, Nombre: ${usuarioObjetivo.nombre} ${usuarioObjetivo.ap_paterno || ''}`,
+      );
+    } catch (error) {
+      console.error('Error al registrar en historial:', error);
+    }
+    
     return { mensaje: 'Clave actualizada correctamente' };
   }
 
