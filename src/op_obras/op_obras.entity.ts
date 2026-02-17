@@ -184,4 +184,7 @@ export class OpObra {
 
   @Column({ name: 'estadopago', default: 'Sin Pagar' })
   estadoPago: string;
+
+  @Column({ name: 'totalcostoconceptos', type: 'decimal', precision: 15, scale: 2, nullable: true })
+  totalCostoConceptos: number;
 }
