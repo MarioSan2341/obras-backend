@@ -10,7 +10,6 @@ import {
   UseInterceptors,
   UploadedFile,
   Res,
-  NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
@@ -23,12 +22,17 @@ export class DirectoresObraController {
     private readonly directoresObraService: DirectoresObraService,
   ) {}
 
+  /** Placeholder SVG cuando el archivo de imagen no existe (evita 404 en el front) */
+  private static readonly PLACEHOLDER_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><rect fill="#e5e7eb" width="80" height="80"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#9ca3af" font-size="10" font-family="sans-serif">Sin imagen</text></svg>';
+
   /** Sirve la imagen de un director por nombre de archivo (evita 404 JSON) */
   @Get('imagen/:filename')
   serveImagen(@Param('filename') filename: string, @Res() res: Response) {
     const filePath = this.directoresObraService.getImagenPath(filename);
     if (!filePath) {
-      throw new NotFoundException('Imagen no encontrada');
+      res.setHeader('Content-Type', 'image/svg+xml');
+      return res.send(DirectoresObraController.PLACEHOLDER_SVG);
     }
     return res.sendFile(filePath);
   }

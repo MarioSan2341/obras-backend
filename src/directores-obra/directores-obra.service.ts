@@ -249,6 +249,16 @@ export class DirectoresObraService {
     return path.join(process.cwd(), 'uploads', 'directores');
   }
 
+  /** Varias posibles raíces de uploads (por si el proceso se ejecuta desde otra carpeta) */
+  private getUploadsDirectoresCandidates(): string[] {
+    const cwd = process.cwd();
+    return [
+      path.join(cwd, 'uploads', 'directores'),
+      path.join(cwd, '..', 'uploads', 'directores'),
+      path.join(cwd, '..', 'obras-backend', 'uploads', 'directores'),
+    ];
+  }
+
   private async guardarImagen(file: Express.Multer.File): Promise<string> {
     const dir = this.getUploadsDirectoresDir();
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -270,8 +280,11 @@ export class DirectoresObraService {
     if (!imagenPath) return null;
     const normalized = imagenPath.replace(/^uploads[/\\]/i, '').replace(/^directores[/\\]/i, '').trim();
     if (!normalized) return null;
-    const dir = this.getUploadsDirectoresDir();
-    const fullPath = path.join(dir, path.basename(normalized));
-    return fs.existsSync(fullPath) ? fullPath : null;
+    const baseName = path.basename(normalized);
+    for (const dir of this.getUploadsDirectoresCandidates()) {
+      const fullPath = path.join(dir, baseName);
+      if (fs.existsSync(fullPath)) return fullPath;
+    }
+    return null;
   }
 }
