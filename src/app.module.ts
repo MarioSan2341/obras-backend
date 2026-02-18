@@ -19,6 +19,7 @@ import { RepLicenciasModule } from './reportes/rep_Licencias/rep_licencias.modul
 import { OpNumerosOficialesModule } from './op_numeros_oficiales/op-numeros-oficiales.module';
 import { EstadisticasModule } from './estadisticas/estadisticas.module';
 import { HistorialModule } from './historial/historial.module';
+import { AlertasModule } from './alertas/alertas.module';
 
 @Module({
   
@@ -59,7 +60,8 @@ import { HistorialModule } from './historial/historial.module';
     RepLicenciasModule,
     OpNumerosOficialesModule,
     EstadisticasModule,
-    HistorialModule
+    HistorialModule,
+    AlertasModule
 
   ],
 })
