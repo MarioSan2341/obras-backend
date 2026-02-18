@@ -133,6 +133,12 @@ export class OpObra {
   @Column({ name: 'descripcionproyecto', type: 'text', nullable: true })
   descripcionProyecto: string;
 
+  @Column({ name: 'revisor', default: '', nullable: true })
+  revisor: string;
+
+  @Column({ name: 'cuantificador', default: '', nullable: true })
+  cuantificador: string;
+
   @Column({ name: 'vigencia', nullable: true })
   vigencia: string;
 

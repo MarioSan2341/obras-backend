@@ -177,8 +177,13 @@ export class DirectoresObraService {
   }
 
   // ================= IMÁGENES =================
+  // Misma base que main.ts: process.cwd()/uploads/directores
+  private getUploadsDirectoresDir(): string {
+    return path.join(process.cwd(), 'uploads', 'directores');
+  }
+
   private async guardarImagen(file: Express.Multer.File): Promise<string> {
-    const dir = path.join(__dirname, '..', '..', 'uploads', 'directores');
+    const dir = this.getUploadsDirectoresDir();
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
     const name = `director-${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`;
@@ -188,7 +193,18 @@ export class DirectoresObraService {
   }
 
   private async eliminarImagen(nombre: string) {
-    const fullPath = path.join(__dirname, '..', '..', 'uploads', nombre);
+    const base = path.join(process.cwd(), 'uploads');
+    const fullPath = path.join(base, nombre.replace(/^[/\\]/, ''));
     if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+  }
+
+  /** Ruta absoluta del archivo de imagen (para servir por controlador) */
+  getImagenPath(imagenPath: string | null | undefined): string | null {
+    if (!imagenPath) return null;
+    const normalized = imagenPath.replace(/^uploads[/\\]/i, '').replace(/^directores[/\\]/i, '').trim();
+    if (!normalized) return null;
+    const dir = this.getUploadsDirectoresDir();
+    const fullPath = path.join(dir, path.basename(normalized));
+    return fs.existsSync(fullPath) ? fullPath : null;
   }
 }

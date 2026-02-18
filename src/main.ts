@@ -8,12 +8,14 @@ async function bootstrap() {
 
   app.enableCors();
 
-  // Configuración para archivos estáticos
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+  // Carpeta uploads en la raíz del proyecto (donde ejecutas npm run start)
+  const uploadsDir = join(process.cwd(), 'uploads');
+  app.useStaticAssets(uploadsDir, {
     prefix: '/uploads/',
   });
 
   await app.listen(3001);
   console.log('Servidor corriendo en http://localhost:3001');
+  console.log('Imágenes de directores en:', join(uploadsDir, 'directores'));
 }
 bootstrap();
