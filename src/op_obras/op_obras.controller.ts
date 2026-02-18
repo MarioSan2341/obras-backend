@@ -17,8 +17,9 @@ export class OpObrasController {
     @Query('consecutivo') consecutivo?: string,
     @Query('fechaCaptura') fechaCaptura?: string,
     @Query('nombrePropietario') nombrePropietario?: string,
+    @Query('numerosPrediosContiguos') numerosPrediosContiguos?: string,
   ) {
-    return this.opObrasService.findListadoFiltrado(consecutivo, fechaCaptura, nombrePropietario);
+    return this.opObrasService.findListadoFiltrado(consecutivo, fechaCaptura, nombrePropietario, numerosPrediosContiguos);
   }
 
   @Get()

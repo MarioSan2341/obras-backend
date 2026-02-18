@@ -133,6 +133,12 @@ export class OpObra {
   @Column({ name: 'descripcionproyecto', type: 'text', nullable: true })
   descripcionProyecto: string;
 
+  @Column({ name: 'revisor', default: '', nullable: true })
+  revisor: string;
+
+  @Column({ name: 'cuantificador', default: '', nullable: true })
+  cuantificador: string;
+
   @Column({ name: 'vigencia', nullable: true })
   vigencia: string;
 
@@ -184,4 +190,12 @@ export class OpObra {
 
   @Column({ name: 'estadopago', default: 'Sin Pagar' })
   estadoPago: string;
+
+
+  @Column({ name: 'cuenta_predial', nullable: true })
+  cuentaPredial: string;
+
+  @Column({ name: 'totalcostoconceptos', type: 'decimal', precision: 15, scale: 2, nullable: true })
+  totalCostoConceptos: number;
+
 }

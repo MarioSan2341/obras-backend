@@ -8,8 +8,11 @@ import {
   Patch,
   UseInterceptors,
   UploadedFile,
+  Res,
+  NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 import { DirectoresObraService } from './directores-obra.service';
 import { CreateDirectorObraDto } from './dto/create-director-obra.dto';
 
@@ -18,6 +21,16 @@ export class DirectoresObraController {
   constructor(
     private readonly directoresObraService: DirectoresObraService,
   ) {}
+
+  /** Sirve la imagen de un director por nombre de archivo (evita 404 JSON) */
+  @Get('imagen/:filename')
+  serveImagen(@Param('filename') filename: string, @Res() res: Response) {
+    const filePath = this.directoresObraService.getImagenPath(filename);
+    if (!filePath) {
+      throw new NotFoundException('Imagen no encontrada');
+    }
+    return res.sendFile(filePath);
+  }
 
   @Get()
   findAll() {
