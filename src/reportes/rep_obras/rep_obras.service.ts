@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { RepObra } from './entities/rep_obra.entity';
 import { Colonia } from '../../colonias/colonias.entity';
+import { OpNumeroOficial } from '../../op_numerosoficiales/op_numerosoficiales.entity';
 import { ReporteObrasFilterDto } from './dto/reporte-obras-filter.dto';
 import * as ExcelJS from 'exceljs';
 import { Response } from 'express';
@@ -14,6 +15,8 @@ export class RepObrasService {
     private readonly obraRepo: Repository<RepObra>,
     @InjectRepository(Colonia)
     private readonly coloniaRepo: Repository<Colonia>,
+    @InjectRepository(OpNumeroOficial)
+    private readonly numerosOficialesRepo: Repository<OpNumeroOficial>,
   ) {}
 
   // ✅ Detalle completo de una obra por id (con JOIN a colonias)
@@ -163,13 +166,45 @@ export class RepObrasService {
     
     const coloniasMap = new Map(colonias.map(c => [c.id_colonia, c]));
 
-    // Agregar nombre y densidad desde colonias
+    // Obtener números oficiales para todas las obras
+    const obraIds = obras.map(o => o.idObra);
+    const numerosOficiales = obraIds.length > 0
+      ? await this.numerosOficialesRepo.find({
+          where: { idobra: In(obraIds) },
+          order: { idnumerosoficialesobra: 'ASC' },
+        })
+      : [];
+    
+    // Agrupar números oficiales por obra
+    const numerosPorObra = new Map<number, { numerooficial: string; calle: string }[]>();
+    numerosOficiales.forEach(num => {
+      if (!numerosPorObra.has(num.idobra)) {
+        numerosPorObra.set(num.idobra, []);
+      }
+      numerosPorObra.get(num.idobra)!.push({
+        numerooficial: num.numerooficial || '',
+        calle: num.calle || '',
+      });
+    });
+
+    // Agregar nombre y densidad desde colonias, y números oficiales
     const data = obras.map(obra => {
       const colonia = coloniasMap.get(obra.idColoniaObra);
+      const numeros = numerosPorObra.get(obra.idObra) || [];
+      // Si hay múltiples números oficiales, combinarlos con punto y coma
+      const numeroOficialStr = numeros.length > 0
+        ? numeros.map(n => n.numerooficial).filter(Boolean).join('; ')
+        : '';
+      const calleStr = numeros.length > 0
+        ? numeros.map(n => n.calle).filter(Boolean).join('; ')
+        : '';
+      
       return {
         ...obra,
         nombreColoniaObra: colonia?.nombre || '',
         idDensidadColoniaObra: colonia?.densidad || '',
+        numeroOficial: numeroOficialStr,
+        calle: calleStr,
       };
     });
 
@@ -201,6 +236,8 @@ export class RepObrasService {
       { header: 'Documentos Requeridos', key: 'documentosRequeridos', width: 25 },
       { header: 'Nombre Colonia Obra', key: 'nombreColoniaObra', width: 20 },
       { header: 'Densidad Colonia Obra', key: 'idDensidadColoniaObra', width: 15 },
+      { header: 'Número Oficial', key: 'numeroOficial', width: 20 },
+      { header: 'Calle', key: 'calle', width: 25 },
       { header: 'Manzana Obra', key: 'manzanaObra', width: 10 },
       { header: 'Lote Obra', key: 'loteObra', width: 10 },
       { header: 'Etapa Obra', key: 'etapaObra', width: 15 },
