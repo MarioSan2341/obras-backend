@@ -19,7 +19,12 @@ import { RepLicenciasModule } from './reportes/rep_Licencias/rep_licencias.modul
 import { OpNumerosOficialesModule } from './op_numeros_oficiales/op-numeros-oficiales.module';
 import { EstadisticasModule } from './estadisticas/estadisticas.module';
 import { HistorialModule } from './historial/historial.module';
+
+import { AlertasModule } from './alertas/alertas.module';
+
+
 import {LugaresRecibidosModule} from './lugares-recibidos/lugares-recibidos.module';
+
 @Module({
   
   imports: [
@@ -60,7 +65,11 @@ import {LugaresRecibidosModule} from './lugares-recibidos/lugares-recibidos.modu
     OpNumerosOficialesModule,
     EstadisticasModule,
     HistorialModule,
+
+    AlertasModule,
+
     LugaresRecibidosModule,
+
   ],
 })
 export class AppModule {}

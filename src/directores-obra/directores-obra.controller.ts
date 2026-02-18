@@ -6,6 +6,7 @@ import {
   Param,
   Put,
   Patch,
+  Query,
   UseInterceptors,
   UploadedFile,
   Res,
@@ -33,8 +34,33 @@ export class DirectoresObraController {
   }
 
   @Get()
-  findAll() {
+  findAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+    @Query('statusFilter') statusFilter?: string,
+  ) {
+    // Si hay parámetros de paginación, usar findPaginated
+    if (page !== undefined || limit !== undefined || search !== undefined || statusFilter !== undefined) {
+      return this.directoresObraService.findPaginated({
+        page: page ? +page : 1,
+        limit: limit ? +limit : 10,
+        search: search || undefined,
+        statusFilter: statusFilter || undefined,
+      });
+    }
     return this.directoresObraService.findAll();
+  }
+
+  @Get('export-all')
+  findAllFiltered(
+    @Query('search') search?: string,
+    @Query('statusFilter') statusFilter?: string,
+  ) {
+    return this.directoresObraService.findAllFiltered({
+      search: search || undefined,
+      statusFilter: statusFilter || undefined,
+    });
   }
 
   @Post()

@@ -172,6 +172,73 @@ export class DirectoresObraService {
     });
   }
 
+  /** Paginado con filtros para carga rápida */
+  async findPaginated(params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    statusFilter?: string; // TODOS | ACTIVOS | INACTIVOS
+  }) {
+    const page = params.page ?? 1;
+    const limit = params.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    const qb = this.repo.createQueryBuilder('d');
+
+    if (params.search?.trim()) {
+      const s = `%${params.search.trim().toLowerCase()}%`;
+      qb.andWhere(
+        '(LOWER(d.nombre_completo) LIKE :s OR LOWER(COALESCE(d.clave_director, \'\')) LIKE :s)',
+        { s }
+      );
+    }
+    if (params.statusFilter === 'ACTIVOS') {
+      qb.andWhere('d.activo = :activo', { activo: true });
+    } else if (params.statusFilter === 'INACTIVOS') {
+      qb.andWhere('d.activo = :activo', { activo: false });
+    }
+
+    const totalRegistros = await qb.getCount();
+    const totalPaginas = Math.ceil(totalRegistros / limit) || 1;
+    const pageValid = Math.max(1, Math.min(page, totalPaginas));
+    const skipValid = (pageValid - 1) * limit;
+
+    const data = await qb
+      .orderBy('d.activo', 'DESC')
+      .addOrderBy('d.fecha_registro', 'DESC')
+      .skip(skipValid)
+      .take(limit)
+      .getMany();
+
+    return {
+      data,
+      meta: { page: pageValid, limit, totalRegistros, totalPaginas },
+    };
+  }
+
+  /** Obtener todos con filtros (para exportación) */
+  async findAllFiltered(params: { search?: string; statusFilter?: string }) {
+    const qb = this.repo.createQueryBuilder('d');
+
+    if (params.search?.trim()) {
+      const s = `%${params.search.trim().toLowerCase()}%`;
+      qb.andWhere(
+        '(LOWER(d.nombre_completo) LIKE :s OR LOWER(COALESCE(d.clave_director, \'\')) LIKE :s)',
+        { s }
+      );
+    }
+    if (params.statusFilter === 'ACTIVOS') {
+      qb.andWhere('d.activo = :activo', { activo: true });
+    } else if (params.statusFilter === 'INACTIVOS') {
+      qb.andWhere('d.activo = :activo', { activo: false });
+    }
+
+    return qb
+      .orderBy('d.activo', 'DESC')
+      .addOrderBy('d.fecha_registro', 'DESC')
+      .getMany();
+  }
+
   findOne(id: number) {
     return this.repo.findOne({ where: { id } });
   }

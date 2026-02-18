@@ -207,16 +207,34 @@ export class OpObrasService {
     });
   }
 
-  // Obtener obras con filtros optimizados (filtra directamente en BD)
+  // Obtener obras con filtros optimizados y paginación (filtra directamente en BD)
   async findListadoFiltrado(
     consecutivo?: string,
     fechaCaptura?: string,
     nombrePropietario?: string,
     numerosPrediosContiguos?: string,
+    calle?: string,
+    page?: number,
+    limit?: number,
   ) {
     try {
+      const pageNum = page ?? 1;
+      const limitNum = limit ?? 10;
+      const skip = (pageNum - 1) * limitNum;
+
       // Construir query con filtros en la BD
       const queryBuilder = this.opObraRepository.createQueryBuilder('obra');
+
+      // Filtrar por calle (viene de op_numerosoficiales)
+      if (calle && calle.trim()) {
+        queryBuilder.innerJoin(
+          'op_numerosoficiales',
+          'num',
+          'num.idobra = obra.idobra AND LOWER(COALESCE(num.calle, \'\')) LIKE LOWER(:calle)',
+          { calle: `%${calle.trim()}%` },
+        );
+        queryBuilder.distinct(true);
+      }
 
       // Filtrar por consecutivo
       if (consecutivo && consecutivo.trim()) {
@@ -252,11 +270,55 @@ export class OpObrasService {
       // Ordenar por ID descendente
       queryBuilder.orderBy('obra.idobra', 'DESC');
 
-      // Obtener obras filtradas
-      const obras = await queryBuilder.getMany();
+      const totalRegistros = await queryBuilder.getCount();
+      const totalPaginas = Math.ceil(totalRegistros / limitNum) || 1;
+      const pageValid = Math.max(1, Math.min(pageNum, totalPaginas));
+      const skipValid = (pageValid - 1) * limitNum;
+
+      // Obtener obras filtradas con paginación (sin el JOIN duplicado para calle en select)
+      const obrasQuery = this.opObraRepository.createQueryBuilder('obra');
+
+      if (calle && calle.trim()) {
+        obrasQuery.innerJoin(
+          'op_numerosoficiales',
+          'num',
+          'num.idobra = obra.idobra AND LOWER(COALESCE(num.calle, \'\')) LIKE LOWER(:calle)',
+          { calle: `%${calle.trim()}%` },
+        );
+        obrasQuery.distinct(true);
+      }
+      if (consecutivo && consecutivo.trim()) {
+        obrasQuery.andWhere('LOWER(obra.consecutivo) LIKE LOWER(:consecutivo)', {
+          consecutivo: `%${consecutivo.trim()}%`,
+        });
+      }
+      if (fechaCaptura && fechaCaptura.trim()) {
+        const fechaInicio = new Date(fechaCaptura);
+        fechaInicio.setHours(0, 0, 0, 0);
+        const fechaFin = new Date(fechaCaptura);
+        fechaFin.setHours(23, 59, 59, 999);
+        obrasQuery.andWhere('obra.fechacaptura >= :fechaInicio', { fechaInicio });
+        obrasQuery.andWhere('obra.fechacaptura <= :fechaFin', { fechaFin });
+      }
+      if (nombrePropietario && nombrePropietario.trim()) {
+        obrasQuery.andWhere('LOWER(obra.nombrepropietario) LIKE LOWER(:nombrePropietario)', {
+          nombrePropietario: `%${nombrePropietario.trim()}%`,
+        });
+      }
+      if (numerosPrediosContiguos && numerosPrediosContiguos.trim()) {
+        obrasQuery.andWhere('LOWER(obra.numerospredioscontiguosobra) LIKE LOWER(:numerosPrediosContiguos)', {
+          numerosPrediosContiguos: `%${numerosPrediosContiguos.trim()}%`,
+        });
+      }
+
+      const obras = await obrasQuery
+        .orderBy('obra.idobra', 'DESC')
+        .skip(skipValid)
+        .take(limitNum)
+        .getMany();
 
       if (obras.length === 0) {
-        return [];
+        return { data: [], meta: { page: pageValid, limit: limitNum, totalRegistros, totalPaginas } };
       }
 
       // Obtener solo las colonias y números oficiales necesarios
@@ -280,7 +342,7 @@ export class OpObrasService {
         numerosPorObra.set(n.idobra, list);
       }
 
-      return obras.map((o) => {
+      const data = obras.map((o) => {
         const numeros = numerosPorObra.get(o.idObra) ?? [];
         const noOficialStr =
           numeros.length > 0
@@ -301,8 +363,111 @@ export class OpObrasService {
           estadoPago: o.estadoPago,
         };
       });
+
+      return { data, meta: { page: pageValid, limit: limitNum, totalRegistros, totalPaginas } };
     } catch (error) {
       console.error('Error en findListadoFiltrado:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Listado filtrado con paginación (para Alertas y otros listados pesados)
+   */
+  async findListadoFiltradoPaginado(
+    page: number,
+    limit: number,
+    consecutivo?: string,
+    fechaCaptura?: string,
+    nombrePropietario?: string,
+    numerosPrediosContiguos?: string,
+    estadoObra?: string,
+  ): Promise<{ data: any[]; total: number }> {
+    try {
+      const queryBuilder = this.opObraRepository.createQueryBuilder('obra');
+
+      if (consecutivo && consecutivo.trim()) {
+        queryBuilder.andWhere('LOWER(obra.consecutivo) LIKE LOWER(:consecutivo)', {
+          consecutivo: `%${consecutivo.trim()}%`,
+        });
+      }
+      if (fechaCaptura && fechaCaptura.trim()) {
+        const fechaInicio = new Date(fechaCaptura);
+        fechaInicio.setHours(0, 0, 0, 0);
+        const fechaFin = new Date(fechaCaptura);
+        fechaFin.setHours(23, 59, 59, 999);
+        queryBuilder.andWhere('obra.fechacaptura >= :fechaInicio', { fechaInicio });
+        queryBuilder.andWhere('obra.fechacaptura <= :fechaFin', { fechaFin });
+      }
+      if (nombrePropietario && nombrePropietario.trim()) {
+        queryBuilder.andWhere('LOWER(obra.nombrepropietario) LIKE LOWER(:nombrePropietario)', {
+          nombrePropietario: `%${nombrePropietario.trim()}%`,
+        });
+      }
+      if (numerosPrediosContiguos && numerosPrediosContiguos.trim()) {
+        queryBuilder.andWhere('LOWER(obra.numerospredioscontiguosobra) LIKE LOWER(:numerosPrediosContiguos)', {
+          numerosPrediosContiguos: `%${numerosPrediosContiguos.trim()}%`,
+        });
+      }
+      if (estadoObra && estadoObra.trim()) {
+        queryBuilder.andWhere('TRIM(obra.estadoObra) = TRIM(:estadoObra)', {
+          estadoObra: estadoObra.trim(),
+        });
+      }
+
+      queryBuilder.orderBy('obra.idobra', 'DESC');
+
+      const [obras, total] = await queryBuilder
+        .skip((page - 1) * limit)
+        .take(limit)
+        .getManyAndCount();
+
+      if (obras.length === 0) {
+        return { data: [], total: 0 };
+      }
+
+      const coloniaIds = [...new Set(obras.map((o) => o.idColoniaObra).filter((id) => id != null))];
+      const obraIds = obras.map((o) => o.idObra);
+
+      const [colonias, numerosOficiales] = await Promise.all([
+        coloniaIds.length > 0
+          ? this.coloniasRepository.find({ where: { id_colonia: In(coloniaIds) } })
+          : Promise.resolve([]),
+        this.numerosOficialesRepository.find({ where: { idobra: In(obraIds) } }),
+      ]);
+
+      const coloniasMap = new Map(colonias.map((c) => [c.id_colonia, { nombre: c.nombre, densidad: c.densidad }]));
+      const numerosPorObra = new Map<number, { calle: string; numerooficial: string }[]>();
+      for (const n of numerosOficiales) {
+        const list = numerosPorObra.get(n.idobra) ?? [];
+        list.push({ calle: n.calle ?? '', numerooficial: n.numerooficial });
+        numerosPorObra.set(n.idobra, list);
+      }
+
+      const data = obras.map((o) => {
+        const numeros = numerosPorObra.get(o.idObra) ?? [];
+        const noOficialStr =
+          numeros.length > 0
+            ? numeros.map((n) => (n.calle ? `${n.calle}, No. ${n.numerooficial}` : `No. ${n.numerooficial}`)).join('; ')
+            : `Mza ${o.manzanaObra ?? ''} Lt ${o.loteObra ?? ''}`.trim() || '-';
+        return {
+          id: o.idObra,
+          consecutivo: o.consecutivo,
+          captura: o.fechaCaptura,
+          propietario: o.nombrePropietario,
+          calle: numeros.length > 0 ? numeros[0].calle ?? '' : '',
+          noOficial: noOficialStr,
+          colonia: coloniasMap.get(o.idColoniaObra)?.nombre ?? '',
+          coloniaDensidad: coloniasMap.get(o.idColoniaObra)?.densidad ?? '',
+          numerosPrediosContiguos: o.numerosPrediosContiguosObra ?? '',
+          estadoObra: o.estadoObra,
+          estadoPago: o.estadoPago,
+        };
+      });
+
+      return { data, total };
+    } catch (error) {
+      console.error('Error en findListadoFiltradoPaginado:', error);
       throw error;
     }
   }
