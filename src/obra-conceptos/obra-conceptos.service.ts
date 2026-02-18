@@ -142,6 +142,11 @@ export class ObraConceptosService {
       list.map(async (oc) => {
         const conceptoPath = await this.buildConceptoPathFromTable(oc.concepto.id);
         const pathKey = conceptoPath.map((p) => p.nombre).join('\0');
+        // Obtener observaciones del concepto hijo (último del path)
+        const conceptoHijo = conceptoPath.length > 0 ? conceptoPath[conceptoPath.length - 1] : null;
+        const conceptoHijoCompleto = conceptoHijo 
+          ? await this.conceptoRepo.findOne({ where: { id: conceptoHijo.id } })
+          : null;
         return {
           id: oc.id,
           obra_id: oc.idobra,
@@ -149,9 +154,14 @@ export class ObraConceptosService {
           costo_unitario: oc.costo_unitario,
           total: oc.total,
           medicion: oc.medicion,
-          observaciones: oc.observaciones,
-          concepto: { id: oc.concepto.id, nombre: oc.concepto.nombre },
+          observaciones: oc.observaciones, // Observaciones de obra-conceptos
+          concepto: { 
+            id: oc.concepto.id, 
+            nombre: oc.concepto.nombre,
+            observaciones: oc.concepto.observaciones // Observaciones del concepto
+          },
           conceptoPath,
+          conceptoObservaciones: conceptoHijoCompleto?.observaciones || null, // Observaciones del concepto hijo
           _pathKey: pathKey,
         };
       }),
