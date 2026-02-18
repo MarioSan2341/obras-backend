@@ -37,7 +37,7 @@ export class AlertasService {
     return this.alertasRepository.save(alerta);
   }
 
-  async update(idAlerta: number, data: Partial<Alerta>): Promise<Alerta> {
+  async update(idAlerta: number, data: Partial<Alerta>): Promise<Alerta | null> {
     await this.alertasRepository.update(idAlerta, {
       ...data,
       fechaModificacion: new Date(),

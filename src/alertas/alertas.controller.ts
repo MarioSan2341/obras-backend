@@ -33,7 +33,7 @@ export class AlertasController {
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: Partial<Alerta>,
-  ): Promise<Alerta> {
+  ): Promise<Alerta | null> {
     return this.alertasService.update(id, body);
   }
 

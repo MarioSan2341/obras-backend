@@ -66,8 +66,7 @@ import {LugaresRecibidosModule} from './lugares-recibidos/lugares-recibidos.modu
     EstadisticasModule,
     HistorialModule,
 
-    AlertasModule
-
+    AlertasModule,
 
     LugaresRecibidosModule,
 

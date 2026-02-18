@@ -22,6 +22,29 @@ export class OpObrasController {
     return this.opObrasService.findListadoFiltrado(consecutivo, fechaCaptura, nombrePropietario, numerosPrediosContiguos);
   }
 
+  @Get('listado-filtrado-paginado')
+  findListadoFiltradoPaginado(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('consecutivo') consecutivo?: string,
+    @Query('fechaCaptura') fechaCaptura?: string,
+    @Query('nombrePropietario') nombrePropietario?: string,
+    @Query('numerosPrediosContiguos') numerosPrediosContiguos?: string,
+    @Query('estadoObra') estadoObra?: string,
+  ) {
+    const pageNum = Math.max(1, parseInt(page || '1', 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit || '10', 10) || 10));
+    return this.opObrasService.findListadoFiltradoPaginado(
+      pageNum,
+      limitNum,
+      consecutivo,
+      fechaCaptura,
+      nombrePropietario,
+      numerosPrediosContiguos,
+      estadoObra,
+    );
+  }
+
   @Get()
   findAll(): Promise<OpObra[]> {
     return this.opObrasService.findAll();

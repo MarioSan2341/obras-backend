@@ -307,6 +307,107 @@ export class OpObrasService {
     }
   }
 
+  /**
+   * Listado filtrado con paginación (para Alertas y otros listados pesados)
+   */
+  async findListadoFiltradoPaginado(
+    page: number,
+    limit: number,
+    consecutivo?: string,
+    fechaCaptura?: string,
+    nombrePropietario?: string,
+    numerosPrediosContiguos?: string,
+    estadoObra?: string,
+  ): Promise<{ data: any[]; total: number }> {
+    try {
+      const queryBuilder = this.opObraRepository.createQueryBuilder('obra');
+
+      if (consecutivo && consecutivo.trim()) {
+        queryBuilder.andWhere('LOWER(obra.consecutivo) LIKE LOWER(:consecutivo)', {
+          consecutivo: `%${consecutivo.trim()}%`,
+        });
+      }
+      if (fechaCaptura && fechaCaptura.trim()) {
+        const fechaInicio = new Date(fechaCaptura);
+        fechaInicio.setHours(0, 0, 0, 0);
+        const fechaFin = new Date(fechaCaptura);
+        fechaFin.setHours(23, 59, 59, 999);
+        queryBuilder.andWhere('obra.fechacaptura >= :fechaInicio', { fechaInicio });
+        queryBuilder.andWhere('obra.fechacaptura <= :fechaFin', { fechaFin });
+      }
+      if (nombrePropietario && nombrePropietario.trim()) {
+        queryBuilder.andWhere('LOWER(obra.nombrepropietario) LIKE LOWER(:nombrePropietario)', {
+          nombrePropietario: `%${nombrePropietario.trim()}%`,
+        });
+      }
+      if (numerosPrediosContiguos && numerosPrediosContiguos.trim()) {
+        queryBuilder.andWhere('LOWER(obra.numerospredioscontiguosobra) LIKE LOWER(:numerosPrediosContiguos)', {
+          numerosPrediosContiguos: `%${numerosPrediosContiguos.trim()}%`,
+        });
+      }
+      if (estadoObra && estadoObra.trim()) {
+        queryBuilder.andWhere('TRIM(obra.estadoObra) = TRIM(:estadoObra)', {
+          estadoObra: estadoObra.trim(),
+        });
+      }
+
+      queryBuilder.orderBy('obra.idobra', 'DESC');
+
+      const [obras, total] = await queryBuilder
+        .skip((page - 1) * limit)
+        .take(limit)
+        .getManyAndCount();
+
+      if (obras.length === 0) {
+        return { data: [], total: 0 };
+      }
+
+      const coloniaIds = [...new Set(obras.map((o) => o.idColoniaObra).filter((id) => id != null))];
+      const obraIds = obras.map((o) => o.idObra);
+
+      const [colonias, numerosOficiales] = await Promise.all([
+        coloniaIds.length > 0
+          ? this.coloniasRepository.find({ where: { id_colonia: In(coloniaIds) } })
+          : Promise.resolve([]),
+        this.numerosOficialesRepository.find({ where: { idobra: In(obraIds) } }),
+      ]);
+
+      const coloniasMap = new Map(colonias.map((c) => [c.id_colonia, { nombre: c.nombre, densidad: c.densidad }]));
+      const numerosPorObra = new Map<number, { calle: string; numerooficial: string }[]>();
+      for (const n of numerosOficiales) {
+        const list = numerosPorObra.get(n.idobra) ?? [];
+        list.push({ calle: n.calle ?? '', numerooficial: n.numerooficial });
+        numerosPorObra.set(n.idobra, list);
+      }
+
+      const data = obras.map((o) => {
+        const numeros = numerosPorObra.get(o.idObra) ?? [];
+        const noOficialStr =
+          numeros.length > 0
+            ? numeros.map((n) => (n.calle ? `${n.calle}, No. ${n.numerooficial}` : `No. ${n.numerooficial}`)).join('; ')
+            : `Mza ${o.manzanaObra ?? ''} Lt ${o.loteObra ?? ''}`.trim() || '-';
+        return {
+          id: o.idObra,
+          consecutivo: o.consecutivo,
+          captura: o.fechaCaptura,
+          propietario: o.nombrePropietario,
+          calle: numeros.length > 0 ? numeros[0].calle ?? '' : '',
+          noOficial: noOficialStr,
+          colonia: coloniasMap.get(o.idColoniaObra)?.nombre ?? '',
+          coloniaDensidad: coloniasMap.get(o.idColoniaObra)?.densidad ?? '',
+          numerosPrediosContiguos: o.numerosPrediosContiguosObra ?? '',
+          estadoObra: o.estadoObra,
+          estadoPago: o.estadoPago,
+        };
+      });
+
+      return { data, total };
+    } catch (error) {
+      console.error('Error en findListadoFiltradoPaginado:', error);
+      throw error;
+    }
+  }
+
    async eliminarObra(id: number, idUsuarioEliminador?: number) {
     // Verificar permisos: SUPERVISOR no puede eliminar obras
     if (idUsuarioEliminador && !(await this.puedeEscribir(idUsuarioEliminador))) {
