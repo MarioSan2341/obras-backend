@@ -196,10 +196,11 @@ export class OpObrasService {
         consecutivo: o.consecutivo,
         captura: o.fechaCaptura,
         propietario: o.nombrePropietario,
-        calle: o.domicilioPropietario,
+        calle: numeros.length > 0 ? numeros[0].calle ?? '' : '',
         noOficial: noOficialStr,
         colonia: coloniasMap.get(o.idColoniaObra)?.nombre ?? '',
         coloniaDensidad: coloniasMap.get(o.idColoniaObra)?.densidad ?? '',
+        numerosPrediosContiguos: o.numerosPrediosContiguosObra ?? '',
         estadoObra: o.estadoObra,
         estadoPago: o.estadoPago
       };
@@ -211,6 +212,7 @@ export class OpObrasService {
     consecutivo?: string,
     fechaCaptura?: string,
     nombrePropietario?: string,
+    numerosPrediosContiguos?: string,
   ) {
     try {
       // Construir query con filtros en la BD
@@ -237,6 +239,13 @@ export class OpObrasService {
       if (nombrePropietario && nombrePropietario.trim()) {
         queryBuilder.andWhere('LOWER(obra.nombrepropietario) LIKE LOWER(:nombrePropietario)', {
           nombrePropietario: `%${nombrePropietario.trim()}%`,
+        });
+      }
+
+      // Filtrar por números predios contiguos
+      if (numerosPrediosContiguos && numerosPrediosContiguos.trim()) {
+        queryBuilder.andWhere('LOWER(obra.numerospredioscontiguosobra) LIKE LOWER(:numerosPrediosContiguos)', {
+          numerosPrediosContiguos: `%${numerosPrediosContiguos.trim()}%`,
         });
       }
 
@@ -283,10 +292,11 @@ export class OpObrasService {
           consecutivo: o.consecutivo,
           captura: o.fechaCaptura,
           propietario: o.nombrePropietario,
-          calle: o.domicilioPropietario,
+          calle: numeros.length > 0 ? numeros[0].calle ?? '' : '',
           noOficial: noOficialStr,
           colonia: coloniasMap.get(o.idColoniaObra)?.nombre ?? '',
           coloniaDensidad: coloniasMap.get(o.idColoniaObra)?.densidad ?? '',
+          numerosPrediosContiguos: o.numerosPrediosContiguosObra ?? '',
           estadoObra: o.estadoObra,
           estadoPago: o.estadoPago,
         };
