@@ -20,6 +20,11 @@ import { OpNumerosOficialesModule } from './op_numeros_oficiales/op-numeros-ofic
 import { EstadisticasModule } from './estadisticas/estadisticas.module';
 import { HistorialModule } from './historial/historial.module';
 
+import { AlertasModule } from './alertas/alertas.module';
+
+
+import {LugaresRecibidosModule} from './lugares-recibidos/lugares-recibidos.module';
+
 @Module({
   
   imports: [
@@ -59,7 +64,11 @@ import { HistorialModule } from './historial/historial.module';
     RepLicenciasModule,
     OpNumerosOficialesModule,
     EstadisticasModule,
-    HistorialModule
+    HistorialModule,
+
+    AlertasModule,
+
+    LugaresRecibidosModule,
 
   ],
 })

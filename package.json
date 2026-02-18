@@ -26,7 +26,8 @@
     "create:historial-table": "node create-historial-table.js",
     "populate:historial-obras": "node populate-historial-from-obras.js",
     "add:cuenta-predial": "node add-cuenta-predial.js",
-    "verify:cuenta-predial": "node verificar-cuenta-predial.js"
+    "verify:cuenta-predial": "node verificar-cuenta-predial.js",
+    "create:alertas-table": "node create-alertas-table.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
