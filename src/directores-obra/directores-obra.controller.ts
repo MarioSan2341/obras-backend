@@ -41,12 +41,18 @@ export class DirectoresObraController {
     @Query('statusFilter') statusFilter?: string,
   ) {
     // Si hay parámetros de paginación, usar findPaginated
-    if (page !== undefined || limit !== undefined || search !== undefined || statusFilter !== undefined) {
+    // Verificar si los parámetros están presentes (incluso si son strings vacíos)
+    const hasPage = page !== undefined && page !== null && page !== '';
+    const hasLimit = limit !== undefined && limit !== null && limit !== '';
+    const hasSearch = search !== undefined && search !== null && search !== '';
+    const hasStatusFilter = statusFilter !== undefined && statusFilter !== null && statusFilter !== '';
+    
+    if (hasPage || hasLimit || hasSearch || hasStatusFilter) {
       return this.directoresObraService.findPaginated({
-        page: page ? +page : 1,
-        limit: limit ? +limit : 10,
-        search: search || undefined,
-        statusFilter: statusFilter || undefined,
+        page: hasPage ? +page : 1,
+        limit: hasLimit ? +limit : 10,
+        search: hasSearch ? search : undefined,
+        statusFilter: hasStatusFilter ? statusFilter : undefined,
       });
     }
     return this.directoresObraService.findAll();
