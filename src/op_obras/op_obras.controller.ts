@@ -18,8 +18,19 @@ export class OpObrasController {
     @Query('fechaCaptura') fechaCaptura?: string,
     @Query('nombrePropietario') nombrePropietario?: string,
     @Query('numerosPrediosContiguos') numerosPrediosContiguos?: string,
+    @Query('calle') calle?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
-    return this.opObrasService.findListadoFiltrado(consecutivo, fechaCaptura, nombrePropietario, numerosPrediosContiguos);
+    return this.opObrasService.findListadoFiltrado(
+      consecutivo,
+      fechaCaptura,
+      nombrePropietario,
+      numerosPrediosContiguos,
+      calle,
+      page ? +page : undefined,
+      limit ? +limit : undefined,
+    );
   }
 
   @Get()
