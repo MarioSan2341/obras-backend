@@ -184,4 +184,7 @@ export class OpObra {
 
   @Column({ name: 'estadopago', default: 'Sin Pagar' })
   estadoPago: string;
+
+  @Column({ name: 'cuenta_predial', nullable: true })
+  cuentaPredial: string;
 }
