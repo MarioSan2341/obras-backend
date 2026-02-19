@@ -76,6 +76,14 @@ export class OpObrasController {
     return this.opObrasService.create(body);
   }
 
+  @Put(':id/total-conceptos')
+  updateTotalCostoConceptos(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { totalCostoConceptos: number },
+  ): Promise<OpObra> {
+    return this.opObrasService.updateTotalCostoConceptos(id, body.totalCostoConceptos ?? 0);
+  }
+
   @Put(':id')
   update(
     @Param('id', ParseIntPipe) id: number,

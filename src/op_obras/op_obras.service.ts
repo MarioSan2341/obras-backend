@@ -94,14 +94,26 @@ export class OpObrasService {
     };
   }
 
-  async create(data: Partial<OpObra>): Promise<OpObra> {
+  async create(data: Partial<OpObra> & { destinoActualProyecto?: string }): Promise<OpObra> {
     // Verificar permisos: SUPERVISOR no puede crear obras
     const idUsuario = data.idUsuarioCapturador;
     if (idUsuario && !(await this.puedeEscribir(idUsuario))) {
       throw new UnauthorizedException('Los supervisores solo pueden visualizar información, no pueden crear obras');
     }
 
-    const obra = this.opObraRepository.create(data);
+    // Campo del frontend: destinoActualProyecto → entidad: destinoActualProyeto (columna destinoactualproyeto)
+    const raw: any = data;
+    const destinoActualProyecto = raw.destinoActualProyecto ?? raw.destinoactualproyecto ?? '';
+    const dataParaObra = { ...data };
+    delete (dataParaObra as any).destinoActualProyecto;
+    delete (dataParaObra as any).destinoactualproyecto;
+
+    const obra = this.opObraRepository.create(dataParaObra);
+    obra.destinoActualProyeto = typeof destinoActualProyecto === 'string' ? destinoActualProyecto : String(destinoActualProyecto ?? '');
+    // La BD exige NOT NULL en idusuarioautorizador: si no viene, usar el mismo que capturador
+    if (obra.idUsuarioAutorizador == null && obra.idUsuarioCapturador != null) {
+      obra.idUsuarioAutorizador = obra.idUsuarioCapturador;
+    }
     const obraGuardada = await this.opObraRepository.save(obra);
     
     // Registrar en historial si hay usuario capturador
@@ -117,7 +129,6 @@ export class OpObrasService {
         );
       } catch (error) {
         // No fallar la creación de la obra si falla el registro en historial
-        console.error('Error al registrar en historial:', error);
       }
     }
     
@@ -132,16 +143,38 @@ export class OpObrasService {
 
     const obra = await this.findOne(id);
 
-    if (data.destinoActualProyecto !== undefined) {
-      obra.destinoActualProyeto = data.destinoActualProyecto;
-      delete (data as any).destinoActualProyecto;
+    const raw: any = data;
+    const destinoActualProyecto =
+      raw.destinoActualProyecto ??
+      raw.destinoactualproyecto ??
+      raw.destinoActualProyeto ??
+      raw.destinoactualproyeto ??
+      '';
+    const valorDestinoActual = typeof destinoActualProyecto === 'string' ? destinoActualProyecto : String(destinoActualProyecto ?? '');
+
+    delete raw.destinoActualProyecto;
+    delete raw.destinoactualproyecto;
+    delete raw.destinoActualProyeto;
+    delete raw.destinoactualproyeto;
+    if (raw.directorObra !== undefined) delete raw.directorObra;
+    if (raw.directorObraLabel !== undefined) delete raw.directorObraLabel;
+    if (raw.numerosOficiales !== undefined) delete raw.numerosOficiales;
+    Object.assign(obra, raw);
+    // Solo sobrescribir destino actual si el body envió valor; si no, mantener el que ya tiene la obra (evita que un 2º PUT sin destino lo borre)
+    if (valorDestinoActual.length > 0) {
+      obra.destinoActualProyeto = valorDestinoActual;
     }
-    if ((data as any).directorObra !== undefined) delete (data as any).directorObra;
-    if ((data as any).directorObraLabel !== undefined) delete (data as any).directorObraLabel;
-    Object.assign(obra, data);
 
     const obraActualizada = await this.opObraRepository.save(obra);
-    
+
+    if (valorDestinoActual.length > 0) {
+      await this.opObraRepository.manager.query(
+        `UPDATE op_obras SET destinoactualproyeto = $1 WHERE idobra = $2`,
+        [valorDestinoActual, id],
+      );
+      obraActualizada.destinoActualProyeto = valorDestinoActual;
+    }
+
     // Registrar en historial si hay usuario modificador
     const usuarioId = idUsuarioModificador || obraActualizada.idUsuarioCapturador;
     if (usuarioId) {
@@ -156,11 +189,19 @@ export class OpObrasService {
         );
       } catch (error) {
         // No fallar la actualización de la obra si falla el registro en historial
-        console.error('Error al registrar en historial:', error);
       }
     }
     
     return obraActualizada;
+  }
+
+  /** Actualiza solo el total de costos de conceptos (usado por Paso 2 sin tocar el resto de la obra). */
+  async updateTotalCostoConceptos(id: number, totalCostoConceptos: number): Promise<OpObra> {
+    await this.opObraRepository.update(
+      { idObra: id },
+      { totalCostoConceptos: Number(totalCostoConceptos) ?? 0 },
+    );
+    return this.findOne(id);
   }
 
   async remove(id: number): Promise<void> {
@@ -366,7 +407,6 @@ export class OpObrasService {
 
       return { data, meta: { page: pageValid, limit: limitNum, totalRegistros, totalPaginas } };
     } catch (error) {
-      console.error('Error en findListadoFiltrado:', error);
       throw error;
     }
   }
@@ -467,7 +507,6 @@ export class OpObrasService {
 
       return { data, total };
     } catch (error) {
-      console.error('Error en findListadoFiltradoPaginado:', error);
       throw error;
     }
   }
@@ -503,7 +542,6 @@ export class OpObrasService {
         );
       } catch (error) {
         // No fallar la eliminación de la obra si falla el registro en historial
-        console.error('Error al registrar en historial:', error);
       }
     }
 
@@ -525,17 +563,34 @@ export class OpObrasService {
     await this.numerosOficialesRepository.delete({ idobra: id });
 
     const now = new Date();
-    const toInsert = numeros
-      .filter((n) => n.numeroOficial?.trim())
-      .map((n) => ({
-        idobra: id,
-        numerooficial: n.numeroOficial!.trim(),
-        calle: n.calle?.trim() || undefined,
-        fechacreacionno: now,
-      }));
+    const normalized = numeros
+      .map((n: any) => ({
+        numeroOficial: (n.numeroOficial ?? n.numerooficial ?? '').toString().trim(),
+        calle: (n.calle ?? '').toString().trim() || undefined,
+      }))
+      .filter((n) => n.numeroOficial);
 
-    if (toInsert.length > 0) {
-      await this.numerosOficialesRepository.insert(toInsert);
+    if (normalized.length > 0) {
+      // Sincronizar secuencia de la PK para evitar "duplicate key" (id ya existe)
+      try {
+        await this.numerosOficialesRepository.manager.query(
+          `SELECT setval(
+            pg_get_serial_sequence('op_numerosoficiales', 'idnumerosoficialesobra'),
+            COALESCE((SELECT MAX(idnumerosoficialesobra) FROM op_numerosoficiales), 1)
+          )`,
+        );
+      } catch (e) {
+        // Si falla (ej. tabla vacía), seguir con el insert
+      }
+      const entities = normalized.map((n) =>
+        this.numerosOficialesRepository.create({
+          idobra: id,
+          numerooficial: n.numeroOficial,
+          calle: n.calle,
+          fechacreacionno: now,
+        }),
+      );
+      await this.numerosOficialesRepository.save(entities);
     }
 
     // Registrar en historial si hay usuario que modificó los números oficiales
@@ -548,10 +603,9 @@ export class OpObrasService {
           'modificar',
           'Obra',
           obra.idObra,
-          `Obra ID: ${obra.idObra}, Consecutivo: ${obra.consecutivo || 'N/A'}, Números: ${toInsert.length}`,
+          `Obra ID: ${obra.idObra}, Consecutivo: ${obra.consecutivo || 'N/A'}, Números: ${normalized.length}`,
         );
       } catch (error) {
-        console.error('Error al registrar en historial:', error);
       }
     }
 
