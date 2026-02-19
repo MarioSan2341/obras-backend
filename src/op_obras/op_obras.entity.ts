@@ -19,6 +19,9 @@ export class OpObra {
   @Column({ name: 'consecutivo', default: '' })
   consecutivo: string;
 
+  @Column({ name: 'idobrasuperior', nullable: true })
+  idObraSuperior: string;
+
   @Column({ name: 'fechacaptura', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   fechaCaptura: Date;
 

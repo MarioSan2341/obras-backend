@@ -107,21 +107,18 @@ export class OpObrasService {
       data.idUsuarioAutorizador = data.idUsuarioCapturador;
     }
 
-    // Convertir destinoActualProyecto (del frontend) a destinoActualProyeto (de la entidad)
-    if (data.destinoActualProyecto !== undefined) {
-      (data as any).destinoActualProyeto = data.destinoActualProyecto;
-      delete (data as any).destinoActualProyecto;
-    }
-
     // Campo del frontend: destinoActualProyecto → entidad: destinoActualProyeto (columna destinoactualproyeto)
     const raw: any = data;
-    const destinoActualProyecto = raw.destinoActualProyecto ?? raw.destinoactualproyecto ?? '';
+    // Guardar el valor ANTES de eliminarlo
+    const destinoActualProyecto = raw.destinoActualProyecto ?? raw.destinoactualproyecto ?? raw.destinoActualProyeto ?? raw.destinoactualproyeto ?? '';
     const dataParaObra = { ...data };
+    // Eliminar las variantes del campo del frontend para que no interfieran
     delete (dataParaObra as any).destinoActualProyecto;
     delete (dataParaObra as any).destinoactualproyecto;
 
     const obra = this.opObraRepository.create(dataParaObra);
-    obra.destinoActualProyeto = typeof destinoActualProyecto === 'string' ? destinoActualProyecto : String(destinoActualProyecto ?? '');
+    // Asignar el valor guardado al campo correcto de la entidad
+    obra.destinoActualProyeto = typeof destinoActualProyecto === 'string' ? destinoActualProyecto.trim() : String(destinoActualProyecto ?? '').trim();
     // La BD exige NOT NULL en idusuarioautorizador: si no viene, usar el mismo que capturador
     if (obra.idUsuarioAutorizador == null && obra.idUsuarioCapturador != null) {
       obra.idUsuarioAutorizador = obra.idUsuarioCapturador;
