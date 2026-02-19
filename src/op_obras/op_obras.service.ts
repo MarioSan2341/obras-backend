@@ -101,6 +101,18 @@ export class OpObrasService {
       throw new UnauthorizedException('Los supervisores solo pueden visualizar información, no pueden crear obras');
     }
 
+    // Si no viene idUsuarioAutorizador, usar el mismo que idUsuarioCapturador (o null si tampoco hay)
+    // Esto evita el error de NOT NULL constraint en la base de datos
+    if (data.idUsuarioAutorizador === undefined && data.idUsuarioCapturador !== undefined) {
+      data.idUsuarioAutorizador = data.idUsuarioCapturador;
+    }
+
+    // Convertir destinoActualProyecto (del frontend) a destinoActualProyeto (de la entidad)
+    if (data.destinoActualProyecto !== undefined) {
+      (data as any).destinoActualProyeto = data.destinoActualProyecto;
+      delete (data as any).destinoActualProyecto;
+    }
+
     // Campo del frontend: destinoActualProyecto → entidad: destinoActualProyeto (columna destinoactualproyeto)
     const raw: any = data;
     const destinoActualProyecto = raw.destinoActualProyecto ?? raw.destinoactualproyecto ?? '';
@@ -290,26 +302,26 @@ export class OpObrasService {
         fechaInicio.setHours(0, 0, 0, 0);
         const fechaFin = new Date(fechaCaptura);
         fechaFin.setHours(23, 59, 59, 999);
-        queryBuilder.andWhere('obra.fechacaptura >= :fechaInicio', { fechaInicio });
-        queryBuilder.andWhere('obra.fechacaptura <= :fechaFin', { fechaFin });
+        queryBuilder.andWhere('obra.fechaCaptura >= :fechaInicio', { fechaInicio });
+        queryBuilder.andWhere('obra.fechaCaptura <= :fechaFin', { fechaFin });
       }
 
       // Filtrar por nombre del propietario
       if (nombrePropietario && nombrePropietario.trim()) {
-        queryBuilder.andWhere('LOWER(obra.nombrepropietario) LIKE LOWER(:nombrePropietario)', {
+        queryBuilder.andWhere('LOWER(obra.nombrePropietario) LIKE LOWER(:nombrePropietario)', {
           nombrePropietario: `%${nombrePropietario.trim()}%`,
         });
       }
 
       // Filtrar por números predios contiguos
       if (numerosPrediosContiguos && numerosPrediosContiguos.trim()) {
-        queryBuilder.andWhere('LOWER(obra.numerospredioscontiguosobra) LIKE LOWER(:numerosPrediosContiguos)', {
+        queryBuilder.andWhere('LOWER(obra.numerosPrediosContiguosObra) LIKE LOWER(:numerosPrediosContiguos)', {
           numerosPrediosContiguos: `%${numerosPrediosContiguos.trim()}%`,
         });
       }
 
       // Ordenar por ID descendente
-      queryBuilder.orderBy('obra.idobra', 'DESC');
+      queryBuilder.orderBy('obra.idObra', 'DESC');
 
       const totalRegistros = await queryBuilder.getCount();
       const totalPaginas = Math.ceil(totalRegistros / limitNum) || 1;
@@ -338,22 +350,22 @@ export class OpObrasService {
         fechaInicio.setHours(0, 0, 0, 0);
         const fechaFin = new Date(fechaCaptura);
         fechaFin.setHours(23, 59, 59, 999);
-        obrasQuery.andWhere('obra.fechacaptura >= :fechaInicio', { fechaInicio });
-        obrasQuery.andWhere('obra.fechacaptura <= :fechaFin', { fechaFin });
+        obrasQuery.andWhere('obra.fechaCaptura >= :fechaInicio', { fechaInicio });
+        obrasQuery.andWhere('obra.fechaCaptura <= :fechaFin', { fechaFin });
       }
       if (nombrePropietario && nombrePropietario.trim()) {
-        obrasQuery.andWhere('LOWER(obra.nombrepropietario) LIKE LOWER(:nombrePropietario)', {
+        obrasQuery.andWhere('LOWER(obra.nombrePropietario) LIKE LOWER(:nombrePropietario)', {
           nombrePropietario: `%${nombrePropietario.trim()}%`,
         });
       }
       if (numerosPrediosContiguos && numerosPrediosContiguos.trim()) {
-        obrasQuery.andWhere('LOWER(obra.numerospredioscontiguosobra) LIKE LOWER(:numerosPrediosContiguos)', {
+        obrasQuery.andWhere('LOWER(obra.numerosPrediosContiguosObra) LIKE LOWER(:numerosPrediosContiguos)', {
           numerosPrediosContiguos: `%${numerosPrediosContiguos.trim()}%`,
         });
       }
 
       const obras = await obrasQuery
-        .orderBy('obra.idobra', 'DESC')
+        .orderBy('obra.idObra', 'DESC')
         .skip(skipValid)
         .take(limitNum)
         .getMany();
@@ -436,16 +448,16 @@ export class OpObrasService {
         fechaInicio.setHours(0, 0, 0, 0);
         const fechaFin = new Date(fechaCaptura);
         fechaFin.setHours(23, 59, 59, 999);
-        queryBuilder.andWhere('obra.fechacaptura >= :fechaInicio', { fechaInicio });
-        queryBuilder.andWhere('obra.fechacaptura <= :fechaFin', { fechaFin });
+        queryBuilder.andWhere('obra.fechaCaptura >= :fechaInicio', { fechaInicio });
+        queryBuilder.andWhere('obra.fechaCaptura <= :fechaFin', { fechaFin });
       }
       if (nombrePropietario && nombrePropietario.trim()) {
-        queryBuilder.andWhere('LOWER(obra.nombrepropietario) LIKE LOWER(:nombrePropietario)', {
+        queryBuilder.andWhere('LOWER(obra.nombrePropietario) LIKE LOWER(:nombrePropietario)', {
           nombrePropietario: `%${nombrePropietario.trim()}%`,
         });
       }
       if (numerosPrediosContiguos && numerosPrediosContiguos.trim()) {
-        queryBuilder.andWhere('LOWER(obra.numerospredioscontiguosobra) LIKE LOWER(:numerosPrediosContiguos)', {
+        queryBuilder.andWhere('LOWER(obra.numerosPrediosContiguosObra) LIKE LOWER(:numerosPrediosContiguos)', {
           numerosPrediosContiguos: `%${numerosPrediosContiguos.trim()}%`,
         });
       }
@@ -455,7 +467,7 @@ export class OpObrasService {
         });
       }
 
-      queryBuilder.orderBy('obra.idobra', 'DESC');
+      queryBuilder.orderBy('obra.idObra', 'DESC');
 
       const [obras, total] = await queryBuilder
         .skip((page - 1) * limit)

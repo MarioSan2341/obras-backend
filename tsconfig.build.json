@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 {"extends":"./tsconfig.json","compilerOptions":{"rootDir":"."},"exclude":["node_modules","test","dist","**/*spec.ts"]}
+=======
+{"extends":"./tsconfig.json","compilerOptions":{"rootDir":"."},"include":["src/**/*"],"exclude":["node_modules","test","dist","**/*spec.ts"]}
+>>>>>>> 459ffab633ee9f70021e0b682d33e3b9fc32ea8e
