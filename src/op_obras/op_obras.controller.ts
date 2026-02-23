@@ -38,10 +38,10 @@ export class OpObrasController {
   @Put(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: Partial<OpObra> & { idUsuarioLogueado?: number },
+    @Body() body: Partial<OpObra> & { idUsuarioLogueado?: number; idTramite?: number },
   ): Promise<OpObra> {
     const idUsuarioLogueado = body.idUsuarioLogueado;
-    delete body.idUsuarioLogueado; // Remover del body para no guardarlo como campo de la obra
+    delete body.idUsuarioLogueado;
     return this.opObrasService.update(id, body, idUsuarioLogueado);
   }
 

@@ -5,16 +5,19 @@ import { ObraConceptosController } from './obra-conceptos.controller';
 import { ObraConceptosService } from './obra-conceptos.service';
 import { Concepto } from '../conceptos/concepto.entity';
 import { OpObra } from '../op_obras/op_obras.entity';
+import { TramitesConceptosModule } from '../tramites/tramites-conceptos.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       ObraConcepto,
       Concepto,
-      OpObra, 
+      OpObra,
     ]),
+    TramitesConceptosModule,
   ],
   controllers: [ObraConceptosController],
   providers: [ObraConceptosService],
+  exports: [ObraConceptosService],
 })
 export class ObraConceptosModule {}

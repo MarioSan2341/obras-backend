@@ -16,5 +16,6 @@ import { Concepto } from '../conceptos/concepto.entity';
   ],
   controllers: [TramitesConceptosController],
   providers: [TramitesConceptosService],
+  exports: [TramitesConceptosService],
 })
 export class TramitesConceptosModule {}

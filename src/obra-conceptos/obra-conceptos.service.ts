@@ -11,6 +11,7 @@ import { Concepto } from '../conceptos/concepto.entity';
 import { OpObra } from '../op_obras/op_obras.entity';
 import { CreateObraConceptoDto } from './dto/create-obra-concepto.dto';
 import { UpdateObraConceptoDto } from './dto/update-obra-concepto.dto';
+import { TramitesConceptosService } from '../tramites/tramites-conceptos.service';
 
 @Injectable()
 export class ObraConceptosService {
@@ -23,6 +24,8 @@ export class ObraConceptosService {
 
     @InjectRepository(OpObra)
     private readonly obraRepo: Repository<OpObra>,
+
+    private readonly tramitesConceptosService: TramitesConceptosService,
   ) {}
 
   async create(dto: CreateObraConceptoDto) {
@@ -96,12 +99,12 @@ export class ObraConceptosService {
 
     const registro = this.obraConceptoRepo.create({
       idobra: dto.obraId,
-      concepto: concepto, // TypeScript ahora sabe que concepto no es null
+      concepto,
       cantidad: dto.cantidad,
       costo_unitario: dto.costo_unitario,
       total,
-      medicion: medicion,
-      observaciones: dto.descripcion_costo,
+      medicion: medicion ?? undefined,
+      observaciones: dto.descripcion_costo ?? undefined,
       estado: true,
       fecha_creacion: new Date(),
     });
@@ -251,5 +254,100 @@ export class ObraConceptosService {
       obraId,
       total,
     };
+  }
+
+  /**
+   * Devuelve todos los IDs de conceptos descendientes del concepto dado (hijos, nietos, etc.).
+   * Usado cuando el trámite tiene un concepto "abuelo" (raíz): en obra_conceptos solo se permiten no-raíz.
+   */
+  private async getDescendantIds(conceptoId: number): Promise<number[]> {
+    const rows = await this.conceptoRepo
+      .createQueryBuilder('c')
+      .select('c.id', 'id')
+      .addSelect('c.parent_id', 'parent_id')
+      .where('c.estado = :estado', { estado: true })
+      .getRawMany<{ id: number; parent_id: number | null }>();
+
+    const byParent = new Map<number, number[]>();
+    for (const r of rows) {
+      const pid = r.parent_id ?? 0;
+      if (!byParent.has(pid)) byParent.set(pid, []);
+      byParent.get(pid)!.push(r.id);
+    }
+
+    const result: number[] = [];
+    const stack = [conceptoId];
+    while (stack.length > 0) {
+      const current = stack.pop()!;
+      const children = byParent.get(current) ?? [];
+      for (const id of children) {
+        result.push(id);
+        stack.push(id);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Inserta en obra_conceptos los conceptos del trámite: idobra, id_concepto, cantidad 1, medición y costo del concepto, total = costo * cantidad, observaciones null.
+   * Si el trámite tiene un concepto "abuelo" (parent_id null), se insertan sus descendientes, no el abuelo.
+   */
+  async seedFromTramite(obraId: number, tramiteId: number): Promise<{ inserted: number }> {
+    const list = await this.tramitesConceptosService.findByTramite(tramiteId);
+    const conceptosConCosto = await this.conceptoRepo
+      .createQueryBuilder('c')
+      .select('c.id', 'id')
+      .addSelect('c.parent_id', 'parent_id')
+      .addSelect('c.costo', 'costo')
+      .addSelect('c.medicion', 'medicion')
+      .where('c.estado = :estado', { estado: true })
+      .getRawMany<{ id: number; parent_id: number | null; costo: number | null; medicion: string | null }>();
+
+    const conceptoMap = new Map(
+      conceptosConCosto.map((c) => [
+        c.id,
+        { parent_id: c.parent_id ?? null, costo: Number(c.costo ?? 0), medicion: c.medicion ?? undefined },
+      ]),
+    );
+
+    const idsAAgregar = new Set<number>();
+    for (const tc of list) {
+      const conceptoId = Number((tc as any).concepto_id ?? (tc as any).concepto?.id);
+      if (!conceptoId || Number.isNaN(conceptoId)) continue;
+
+      const info = conceptoMap.get(conceptoId);
+      const parentId = info?.parent_id ?? (tc as any).concepto?.parent_id ?? (tc as any).concepto?.parentId ?? null;
+
+      if (parentId == null) {
+        const descendants = await this.getDescendantIds(conceptoId);
+        descendants.forEach((id) => idsAAgregar.add(id));
+      } else {
+        idsAAgregar.add(conceptoId);
+      }
+    }
+
+    let inserted = 0;
+    for (const conceptoId of idsAAgregar) {
+      const info = conceptoMap.get(conceptoId);
+      const costo = info?.costo ?? 0;
+      const medicion = info?.medicion;
+      try {
+        await this.create({
+          obraId,
+          conceptoId,
+          cantidad: 1,
+          costo_unitario: costo,
+          medicion: medicion ?? undefined,
+        });
+        inserted++;
+      } catch (err: any) {
+        if (err?.message?.includes('ya fue agregado') || err?.statusCode === 400) {
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    return { inserted };
   }
 }

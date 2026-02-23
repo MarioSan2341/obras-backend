@@ -9,11 +9,13 @@ import { OpNumeroOficial } from '../op_numerosoficiales/op_numerosoficiales.enti
 import { DirectorObra } from '../directores-obra/director-obra.entity';
 import { HistorialModule } from '../historial/historial.module';
 import { Usuario } from '../usuarios/usuario.entity';
+import { ObraConceptosModule } from '../obra-conceptos/obra-conceptos.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([OpObra, Colonia, OpNumeroOficial, DirectorObra, Usuario]),
     HistorialModule,
+    ObraConceptosModule,
   ],
   controllers: [OpObrasListadoController, OpObrasController],
   providers: [OpObrasService],

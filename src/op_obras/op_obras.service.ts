@@ -7,7 +7,7 @@ import { OpNumeroOficial } from '../op_numerosoficiales/op_numerosoficiales.enti
 import { HistorialService } from '../historial/historial.service';
 import { Usuario } from '../usuarios/usuario.entity';
 import { Rol } from '../usuarios/roles.enum';
-
+import { ObraConceptosService } from '../obra-conceptos/obra-conceptos.service';
 
 @Injectable()
 export class OpObrasService {
@@ -23,6 +23,7 @@ export class OpObrasService {
     private historialService: HistorialService,
     @InjectRepository(Usuario)
     private usuariosRepository: Repository<Usuario>,
+    private obraConceptosService: ObraConceptosService,
   ) {}
 
   /**
@@ -144,7 +145,7 @@ export class OpObrasService {
     return obraGuardada;
   }
 
-  async update(id: number, data: Partial<OpObra> & { destinoActualProyecto?: string }, idUsuarioModificador?: number): Promise<OpObra> {
+  async update(id: number, data: Partial<OpObra> & { destinoActualProyecto?: string; idTramite?: number }, idUsuarioModificador?: number): Promise<OpObra> {
     // Verificar permisos: SUPERVISOR no puede modificar obras
     if (idUsuarioModificador && !(await this.puedeEscribir(idUsuarioModificador))) {
       throw new UnauthorizedException('Los supervisores solo pueden visualizar información, no pueden modificar obras');
@@ -152,7 +153,11 @@ export class OpObrasService {
 
     const obra = await this.findOne(id);
 
-    const raw: any = data;
+    const raw: any = { ...data };
+    const idTramite = raw.idTramite ?? raw.idtramite ?? null;
+    delete raw.idTramite;
+    delete raw.idtramite;
+
     const destinoActualProyecto =
       raw.destinoActualProyecto ??
       raw.destinoactualproyecto ??
@@ -182,6 +187,18 @@ export class OpObrasService {
         [valorDestinoActual, id],
       );
       obraActualizada.destinoActualProyeto = valorDestinoActual;
+    }
+
+    // Si se envió idTramite, insertar en obra_conceptos los conceptos del trámite (idobra, id_concepto, cantidad 1, costo/medicion del concepto, total, observaciones null)
+    if (idTramite != null && Number(idTramite) > 0) {
+      try {
+        await this.obraConceptosService.seedFromTramite(id, Number(idTramite));
+        const { total } = await this.obraConceptosService.getTotalByObra(id);
+        await this.updateTotalCostoConceptos(id, total);
+      } catch (err: any) {
+        console.error('Error al insertar conceptos del trámite en obra_conceptos:', err?.message ?? err);
+        throw err;
+      }
     }
 
     // Registrar en historial si hay usuario modificador
