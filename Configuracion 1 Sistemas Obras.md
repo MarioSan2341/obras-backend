@@ -1,4 +1,4 @@
-# Mensaje para el Ayuntamiento de Tlaquepaque – Requerimientos del Sistema de Obras
+# Mensaje para el Ayuntamiento de Tlaquepaque Obras Publicas 23/02/2026 – Requerimientos del Sistema de Obras
 
 ## Sobre el servidor que tienen (OP_SDOP10)
 
@@ -38,7 +38,7 @@ Revisando las especificaciones del servidor:
 
 ---
 
-## Lo que yo les voy a mandar (en esta primera entrega)
+## Lo que yo les voy a mandar (despues de recibir respuesta)
 
 Son **3 cosas**:
 
@@ -48,7 +48,7 @@ Son **3 cosas**:
 2. **Backup de la base de datos (.dump)**  
    Archivo con la base de datos completa: estructura de tablas **y todos los datos**. Lo restauran en su PostgreSQL con el comando que les indicaré en las instrucciones.
 
-3. **Este documento** (MENSAJE_PARA_AYUNTAMIENTO)  
+3. **Este documento** (Configuracion 1 Sistemas Obras)  
    Para que sepan qué necesitan tener instalado y qué información me tienen que confirmar.
 
 **Después de que me respondan** con la información que pido abajo, les preparo y mando:
@@ -64,16 +64,14 @@ Para dejarles las instrucciones y el archivo de configuración listos:
 1. **¿Tienen ya Node.js y/o PostgreSQL instalados?**  
    Si sí, ¿qué versiones? (pueden escribirla o mandar captura de "Acerca de" o de la consola.)
 
-2. **¿Cuánto espacio libre tienen en el disco donde instalarían el proyecto?**  
-   (En "Este equipo" pueden ver los GB libres.)
 
-3. **¿Qué puerto quieren usar para la aplicación?**  
+2. **¿Qué puerto quieren usar para la aplicación?**  
    Por defecto uso el **3000**; si tienen otro estándar, me lo dicen.
 
-4. **¿PostgreSQL lo instalarán en el mismo servidor (OP_SDOP10)?**  
+3. **¿PostgreSQL lo instalarán en el mismo servidor (OP_SDOP10)?**  
    Si la base de datos va en otro equipo, necesito la IP o nombre del servidor donde estará PostgreSQL.
 
-5. **¿Qué usuario y contraseña quieren para la base de datos?**  
+4. **¿Qué usuario y contraseña quieren para la base de datos?**  
    O si prefieren, les propongo un usuario genérico (por ejemplo `tlaquepaque_app`) y ellos definen la contraseña y me la comparten de forma segura.
 
 ---
